@@ -2,7 +2,7 @@ import openai
 import json
 import random
 import os
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from tarot_cards import TarotDeck  # Импортируем класс колоды
 
 # Создаем экземпляр колоды
@@ -52,13 +52,17 @@ class TarotSpread:
         
         return card_dict
     
-    def _get_cards_from_names(self, card_names: List[str]) -> List[Dict]:
-        """Получить полные данные карт по их названиям"""
+    def _get_cards_from_names(self, cards_with_positions: List[Tuple[str, str]]) -> List[Dict]:
+        """
+        Получить полные данные карт по их названиям с сохранением позиций
+        cards_with_positions: список кортежей (имя_карты, позиция)
+        """
         cards_data = []
-        for name in card_names:
+        for name, position in cards_with_positions:
             for card in CARDS:
                 if card.name == name:
-                    cards_data.append(self._card_to_dict(card))
+                    # Передаем СОХРАНЕННУЮ позицию!
+                    cards_data.append(self._card_to_dict(card, position))
                     break
         return cards_data
     
@@ -70,15 +74,16 @@ class TarotSpread:
     async def generate_reading(self, 
                            spread_name: str, 
                            positions: List[str], 
-                           cards: List[str], 
+                           cards_with_positions: List[Tuple[str, str]], 
                            question: str,
                            model: str = "gpt-4o-mini") -> str:
         """
         Генерация глубокой интерпретации расклада через GPTunnel
+        cards_with_positions: список кортежей (имя_карты, позиция)
         """
         
-        # Получаем полные данные карт
-        cards_data = self._get_cards_from_names(cards)
+        # Получаем полные данные карт с сохранением позиций
+        cards_data = self._get_cards_from_names(cards_with_positions)
         
         combinations = self.analyze_combinations(cards_data)
         combinations_text = "\n".join(combinations) if combinations else "Нет особых сочетаний"
@@ -218,13 +223,16 @@ class TarotSpread:
 
     async def three_card_spread(self, question: str) -> Dict[str, Any]:
         """Расклад 'Три карты' (Прошлое-Настоящее-Будущее)"""
-        cards = self._get_random_cards(3)
+        cards_dicts = self._get_random_cards(3)
         positions = ["Прошлое", "Настоящее", "Будущее"]
+        
+        # Создаем список кортежей (имя, позиция)
+        cards_with_positions = [(card["name"], card["position"]) for card in cards_dicts]
         
         interpretation = await self.generate_reading(
             spread_name="Три карты",
             positions=positions,
-            cards=[card["name"] for card in cards],
+            cards_with_positions=cards_with_positions,
             question=question
         )
         
@@ -232,13 +240,13 @@ class TarotSpread:
             "spread": "three_cards",
             "name": "Три карты (Прошлое-Настоящее-Будущее)",
             "positions": positions,
-            "cards": cards,
+            "cards": cards_dicts,  # Возвращаем полные данные карт
             "interpretation": interpretation
         }
     
     async def relationship_spread(self, question: str) -> Dict[str, Any]:
         """Расклад на отношения (5 карт)"""
-        cards = self._get_random_cards(5)
+        cards_dicts = self._get_random_cards(5)
         positions = [
             "Вы в отношениях",
             "Партнер в отношениях", 
@@ -247,10 +255,13 @@ class TarotSpread:
             "Перспектива"
         ]
         
+        # Создаем список кортежей (имя, позиция)
+        cards_with_positions = [(card["name"], card["position"]) for card in cards_dicts]
+        
         interpretation = await self.generate_reading(
             spread_name="Отношения",
             positions=positions,
-            cards=[card["name"] for card in cards],
+            cards_with_positions=cards_with_positions,
             question=question
         )
         
@@ -258,13 +269,13 @@ class TarotSpread:
             "spread": "relationship",
             "name": "Расклад на отношения",
             "positions": positions,
-            "cards": cards,
+            "cards": cards_dicts,
             "interpretation": interpretation
         }
 
     async def career_spread(self, question: str) -> Dict[str, Any]:
         """Расклад на карьеру (4 карты)"""
-        cards = self._get_random_cards(4)
+        cards_dicts = self._get_random_cards(4)
         positions = [
             "Текущая ситуация",
             "Возможности", 
@@ -272,10 +283,13 @@ class TarotSpread:
             "Результат"
         ]
         
+        # Создаем список кортежей (имя, позиция)
+        cards_with_positions = [(card["name"], card["position"]) for card in cards_dicts]
+        
         interpretation = await self.generate_reading(
             spread_name="Карьера",
             positions=positions,
-            cards=[card["name"] for card in cards],
+            cards_with_positions=cards_with_positions,
             question=question
         )
         
@@ -283,13 +297,13 @@ class TarotSpread:
             "spread": "career",
             "name": "Расклад на карьеру",
             "positions": positions,
-            "cards": cards,
+            "cards": cards_dicts,
             "interpretation": interpretation
         }
         
     async def celtic_cross_spread(self, question: str) -> Dict[str, Any]:
         """Расклад 'Кельтский крест' (10 карт)"""
-        cards = self._get_random_cards(10)
+        cards_dicts = self._get_random_cards(10)
         positions = [
             "Ситуация (центр)",
             "Препятствие (пересекает)",
@@ -303,10 +317,13 @@ class TarotSpread:
             "Итог (результат)"
         ]
         
+        # Создаем список кортежей (имя, позиция)
+        cards_with_positions = [(card["name"], card["position"]) for card in cards_dicts]
+        
         interpretation = await self.generate_reading(
             spread_name="Кельтский крест",
             positions=positions,
-            cards=[card["name"] for card in cards],
+            cards_with_positions=cards_with_positions,
             question=question
         )
         
@@ -314,58 +331,7 @@ class TarotSpread:
             "spread": "celtic_cross",
             "name": "Кельтский крест",
             "positions": positions,
-            "cards": cards,
-            "interpretation": interpretation
-        }
-    
-    async def relationship_spread(self, question: str) -> Dict[str, Any]:
-        """Расклад на отношения (5 карт)"""
-        cards = self._get_random_cards(5)
-        positions = [
-            "Вы в отношениях",
-            "Партнер в отношениях",
-            "Что вас связывает",
-            "Что мешает",
-            "Перспектива"
-        ]
-        
-        interpretation = await self.generate_reading(
-            spread_name="Отношения",
-            positions=positions,
-            cards=[card["name"] for card in cards],
-            question=question
-        )
-        
-        return {
-            "spread": "relationship",
-            "name": "Расклад на отношения",
-            "positions": positions,
-            "cards": cards,
-            "interpretation": interpretation
-        }
-    
-    async def career_spread(self, question: str) -> Dict[str, Any]:
-        """Расклад на карьеру (4 карты)"""
-        cards = self._get_random_cards(4)
-        positions = [
-            "Текущая ситуация",
-            "Возможности",
-            "Препятствия",
-            "Результат"
-        ]
-        
-        interpretation = await self.generate_reading(
-            spread_name="Карьера",
-            positions=positions,
-            cards=[card["name"] for card in cards],
-            question=question
-        )
-        
-        return {
-            "spread": "career",
-            "name": "Расклад на карьеру",
-            "positions": positions,
-            "cards": cards,
+            "cards": cards_dicts,
             "interpretation": interpretation
         }
     
@@ -408,4 +374,4 @@ class TarotSpread:
 # Функция-помощник для быстрого создания экземпляра
 def create_spread_maker(api_key: str = None):
     """Создать объект для работы с раскладами"""
-    return TarotSpread(openai_api_key=api_key)
+    return TarotSpread(gptunnel_api_key=api_key)
