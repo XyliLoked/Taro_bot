@@ -10,6 +10,8 @@ tg.ready();
 // Функция для отправки расклада в бота
 function startReading(spreadType) {
     // Получаем вопрос из текстового поля
+    alert("Функция вызвана! Тип: " + spreadType);
+    
     const questionInput = document.getElementById('userQuestion');
     let userQuestion = '';
     
