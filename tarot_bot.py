@@ -329,30 +329,44 @@ async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE
             if not spread_method:
                 await update.message.reply_text("❌ Неизвестный тип расклада")
                 return
-            
+
             await update.message.reply_text("🔮 Получаю расклад из Mini App...")
-            
-            result = await spread_method(question)
-            
-            db.save_reading(
-                user_id=user.id,
-                spread_type=result['name'],
-                question=question,
-                cards=result.get('cards', []),
-                interpretation=result['interpretation'],
-                ai_generated=True
-            )
-            db.increment_reading_count(user.id)
-            
+            print("🔮 Вызываю spread_method...")
+
+            try:
+                result = await spread_method(question)
+                print(f"✅ spread_method выполнен, длина ответа: {len(result.get('interpretation', ''))}")
+            except Exception as e:
+                print(f"❌ Ошибка в spread_method: {e}")
+                await update.message.reply_text(f"❌ Ошибка при получении расклада: {e}")
+                return
+
+            print("💾 Сохраняю в базу данных...")
+            try:
+                db.save_reading(
+                    user_id=user.id,
+                    spread_type=result['name'],
+                    question=question,
+                    cards=result.get('cards', []),
+                    interpretation=result['interpretation'],
+                    ai_generated=True
+                )
+                db.increment_reading_count(user.id)
+                print("✅ Данные сохранены в БД")
+            except Exception as e:
+                print(f"❌ Ошибка сохранения в БД: {e}")
+
             response = f"🔮 *{result['name']}*\n\n"
             response += f"📝 *Вопрос:* {question}\n\n"
             response += result['interpretation']
-            
+
+            print("📤 Отправляю ответ пользователю...")
             await update.message.reply_text(
                 response, 
                 parse_mode='Markdown',
                 reply_markup=main_keyboard
             )
+            print("✅ Ответ отправлен")
             
     except Exception as e:
         print(f"❌ Ошибка обработки Mini App: {e}")
