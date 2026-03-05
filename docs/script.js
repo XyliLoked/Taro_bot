@@ -7,8 +7,19 @@ tg.expand();
 // Показываем, что приложение готово
 tg.ready();
 
+// ЭТО ВАЖНО: проверяем, что WebApp действительно загружен
+console.log("Telegram WebApp initialized:", tg);
+
 // Функция для отправки расклада в бота
 function startReading(spreadType) {
+    // Получаем вопрос из текстового поля
+    const questionInput = document.getElementById('userQuestion');
+    let userQuestion = '';
+    
+    if (questionInput) {
+        userQuestion = questionInput.value.trim();
+    }
+    
     // Если вопрос пустой, используем стандартный
     const finalQuestion = userQuestion || "Общий вопрос без уточнения";
     
@@ -23,9 +34,12 @@ function startReading(spreadType) {
     };
     
     // Отправляем данные в бота
-    tg.sendData(JSON.stringify(data));
-    
-    console.log('Отправляем данные:', data);
+    if (tg) {
+        tg.sendData(JSON.stringify(data));
+        console.log('Отправляем данные:', data);
+    } else {
+        alert("Ошибка: Telegram WebApp не инициализирован");
+    }
 }
 
 // Функция показа загрузки
