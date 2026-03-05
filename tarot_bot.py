@@ -4,7 +4,7 @@ import json  # <-- Импорт для работы с JSON
 import asyncio
 from datetime import datetime
 from dotenv import load_dotenv
-from telegram import Update, ReplyKeyboardMarkup
+from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
 from telegram.request import HTTPXRequest
 from spreads import TarotSpread
@@ -37,6 +37,14 @@ main_keyboard = ReplyKeyboardMarkup([
     ["❓ Помощь"]
 ], resize_keyboard=True)
 
+# Клавиатура с кнопкой для Mini App
+mini_app_keyboard = ReplyKeyboardMarkup([
+    [KeyboardButton("🔮 Открыть Таро", web_app=WebAppInfo(url="https://xyliloked.github.io/Taro_bot/"))],
+    ["🔮 Три карты", "💖 Отношения"],
+    ["💼 Карьера", "🌟 Карта дня"],
+    ["❓ Помощь"]
+], resize_keyboard=True)
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Приветствие"""
     user = update.effective_user
@@ -50,7 +58,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "🔮 Добро пожаловать в бот Таро!\n\n"
         "Я помогу вам сделать расклад на любую тему. Выберите тип расклада:",
-        reply_markup=main_keyboard
+        reply_markup=mini_app_keyboard
     )
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
