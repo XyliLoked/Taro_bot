@@ -164,7 +164,7 @@ body::before {
 /* Адаптация для мобильных */
 @media (max-width: 480px) {
     .main-title {
-        font-size: 1.6rem;
+        font-size: 1.4rem;
         letter-spacing: 2px;
     }
     
