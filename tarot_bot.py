@@ -1,11 +1,12 @@
 # tarot_bot.py
 import os
+import json  # <-- Импорт для работы с JSON
 import asyncio
 from datetime import datetime
 from dotenv import load_dotenv
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
-from telegram.request import HTTPXRequest  # Добавить этот импорт
+from telegram.request import HTTPXRequest
 from spreads import TarotSpread
 from database import db
 from config import config
@@ -17,10 +18,10 @@ GPTUNNEL_KEY = os.getenv("GPTUNNEL_API_KEY")
 
 # Создаем кастомный request с правильными таймаутами
 request = HTTPXRequest(
-    connect_timeout=30.0,      # ← ПРАВИЛЬНОЕ название!
-    read_timeout=30.0,         # 30 секунд на чтение
-    write_timeout=30.0,        # 30 секунд на запись
-    pool_timeout=30.0          # 30 секунд на pool
+    connect_timeout=30.0,
+    read_timeout=30.0,
+    write_timeout=30.0,
+    pool_timeout=30.0
 )
 
 # Создаем объект для раскладов
@@ -38,7 +39,6 @@ main_keyboard = ReplyKeyboardMarkup([
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Приветствие"""
-    # Сохраняем пользователя в БД при старте
     user = update.effective_user
     db.get_or_create_user(
         telegram_id=user.id,
@@ -87,99 +87,22 @@ async def handle_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     spread_type = context.user_data.get('spread_type', '🔮 Три карты')
     
-    # ✅ НОВАЯ ПРОВЕРКА: если это ответ "Нет, спасибо" после истории
     if question == "❌ Нет, спасибо" and context.user_data.get('after_history'):
-        # Очищаем флаг
         del context.user_data['after_history']
         
         await update.message.reply_text(
             "Хорошо! Если захотите сделать расклад позже - просто выберите тип расклада в меню.",
             reply_markup=main_keyboard
         )
-        # Очищаем ВСЕ временные данные
         keys_to_clear = ['pending_question', 'existing_reading', 'spread_type', 'current_question', 'after_history']
         for key in keys_to_clear:
             if key in context.user_data:
                 del context.user_data[key]
         return ConversationHandler.END
     
-    # ========== ОБРАБОТЧИК ДЛЯ MINI APP ==========
-from telegram.ext import MessageHandler, filters
-import json
-
-async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обрабатывает данные, отправленные из Mini App"""
-    # Получаем данные от Mini App
-    web_app_data = update.effective_message.web_app_data
-    if not web_app_data:
-        return
-    
-    try:
-        # Парсим JSON
-        data = json.loads(web_app_data.data)
-        user = update.effective_user
-        
-        # Логируем для отладки
-        print(f"📲 Mini App данные от {user.id}: {data}")
-        
-        # Проверяем действие
-        if data.get('action') == 'spread':
-            spread_type = data.get('type')
-            question = data.get('question', 'Общий вопрос')
-            
-            # Подбираем нужный метод расклада
-            spread_map = {
-                'three_cards': spreader.three_card_spread,
-                'relationship': spreader.relationship_spread,
-                'career': spreader.career_spread,
-                'celtic_cross': spreader.celtic_cross_spread,
-                'daily': spreader.daily_spread,
-                'five_cards': spreader.five_card_spread  # если есть такой метод
-            }
-            
-            spread_method = spread_map.get(spread_type)
-            if not spread_method:
-                await update.message.reply_text("❌ Неизвестный тип расклада")
-                return
-            
-            # Сообщаем о начале
-            await update.message.reply_text("🔮 Получаю расклад из Mini App...")
-            
-            # Выполняем расклад
-            result = await spread_method(question)
-            
-            # Сохраняем в базу
-            db.save_reading(
-                user_id=user.id,
-                spread_type=result['name'],
-                question=question,
-                cards=result.get('cards', []),
-                interpretation=result['interpretation'],
-                ai_generated=True
-            )
-            db.increment_reading_count(user.id)
-            
-            # Отправляем результат
-            response = f"🔮 *{result['name']}*\n\n"
-            response += f"📝 *Вопрос:* {question}\n\n"
-            response += result['interpretation']
-            
-            await update.message.reply_text(
-                response, 
-                parse_mode='Markdown',
-                reply_markup=main_keyboard
-            )
-            
-    except Exception as e:
-        print(f"❌ Ошибка обработки Mini App: {e}")
-        await update.message.reply_text(f"❌ Ошибка: {str(e)}")
-    
-    
-    # Проверяем, не нажал ли пользователь кнопку выбора после предупреждения
     if question in ["✅ Да, хочу новый расклад", "🔄 Уточнить вопрос", "📜 Показать прошлый расклад"]:
         return await handle_choice_after_warning(update, context)
     
-    # Получаем или создаем пользователя в БД
     db.get_or_create_user(
         telegram_id=user.id,
         username=user.username,
@@ -187,25 +110,20 @@ async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE
         last_name=user.last_name
     )
     
-    # 🔍 ПРОВЕРКА НА ПОВТОРНЫЙ ВОПРОС СЕГОДНЯ
     from datetime import datetime
     today = datetime.now().date()
     
-    # Получаем последние расклады пользователя
     recent_readings = db.get_user_history(user.id, limit=10)
     
-    # Ищем похожий вопрос сегодня
     similar_reading = None
     for reading in recent_readings:
         reading_date = reading.created_at.date()
         if reading_date == today:
-            # Простая проверка похожести вопроса
             if question.lower() in reading.question.lower() or reading.question.lower() in question.lower():
                 similar_reading = reading
                 break
     
     if similar_reading:
-        # Сохраняем информацию для последующего выбора
         context.user_data['pending_question'] = question
         context.user_data['spread_type'] = spread_type
         context.user_data['existing_reading'] = {
@@ -214,7 +132,6 @@ async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE
             'date': similar_reading.created_at
         }
         
-        # Предупреждаем, но даем выбор
         keyboard = [
             ["✅ Да, хочу новый расклад"],
             ["🔄 Уточнить вопрос"],
@@ -230,9 +147,8 @@ async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE
             reply_markup=reply_markup,
             parse_mode='Markdown'
         )
-        return QUESTION  # Остаемся в том же состоянии
+        return QUESTION
     
-    # Если нет повтора - делаем расклад
     return await perform_reading(update, context, question, spread_type)
 
 async def handle_choice_after_warning(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -241,7 +157,6 @@ async def handle_choice_after_warning(update: Update, context: ContextTypes.DEFA
     user = update.effective_user
     
     if choice == "✅ Да, хочу новый расклад":
-        # Пользователь хочет новый расклад
         question = context.user_data.get('pending_question')
         spread_type = context.user_data.get('spread_type', '🔮 Три карты')
         
@@ -249,7 +164,6 @@ async def handle_choice_after_warning(update: Update, context: ContextTypes.DEFA
         return await perform_reading(update, context, question, spread_type)
     
     elif choice == "🔄 Уточнить вопрос":
-        # Пользователь хочет переформулировать
         await update.message.reply_text(
             "📝 Напишите уточненную версию вашего вопроса.\n"
             "Постарайтесь сформулировать его иначе или добавить детали:"
@@ -257,7 +171,6 @@ async def handle_choice_after_warning(update: Update, context: ContextTypes.DEFA
         return QUESTION
     
     elif choice == "📜 Показать прошлый расклад":
-        # Показываем прошлый расклад
         existing = context.user_data.get('existing_reading', {})
         if existing:
             response = f"📜 *Ваш прошлый расклад*\n"
@@ -271,7 +184,6 @@ async def handle_choice_after_warning(update: Update, context: ContextTypes.DEFA
                 clean_response = response.replace('*', '').replace('_', '')
                 await update.message.reply_text(clean_response)
             
-            # Сохраняем, что мы сейчас в состоянии "после показа истории"
             context.user_data['after_history'] = True
             
             keyboard = [
@@ -286,7 +198,6 @@ async def handle_choice_after_warning(update: Update, context: ContextTypes.DEFA
             )
             return QUESTION
         
-        # Если нет сохраненного (ошибка)
         return await perform_reading(update, context, 
                                      context.user_data.get('pending_question'), 
                                      context.user_data.get('spread_type'))
@@ -296,7 +207,6 @@ async def handle_choice_after_warning(update: Update, context: ContextTypes.DEFA
             "Хорошо! Если захотите сделать расклад позже - просто выберите тип расклада в меню.",
             reply_markup=main_keyboard
         )
-        # Очищаем ВСЕ временные данные
         keys_to_clear = ['pending_question', 'existing_reading', 'spread_type', 'current_question']
         for key in keys_to_clear:
             if key in context.user_data:
@@ -304,18 +214,16 @@ async def handle_choice_after_warning(update: Update, context: ContextTypes.DEFA
         return ConversationHandler.END
     
     else:
-        # Если пришел другой текст (например, новый вопрос)
         return await perform_reading(update, context, choice, 
                                      context.user_data.get('spread_type', '🔮 Три карты'))
 
 async def perform_reading(update: Update, context: ContextTypes.DEFAULT_TYPE, question: str, spread_type: str):
-    """Выполнение расклада (вынесено в отдельную функцию)"""
+    """Выполнение расклада"""
     user = update.effective_user
     
     await update.message.reply_text("🔮 Делаю расклад... Подождите немного...")
     
     try:
-        # Выполняем нужный расклад
         if "Три карты" in spread_type:
             result = await spreader.three_card_spread(question)
         elif "Отношения" in spread_type:
@@ -327,7 +235,6 @@ async def perform_reading(update: Update, context: ContextTypes.DEFAULT_TYPE, qu
         else:
             result = await spreader.three_card_spread(question)
         
-        # Сохраняем расклад в БД
         db.save_reading(
             user_id=user.id,
             spread_type=spread_type,
@@ -337,17 +244,14 @@ async def perform_reading(update: Update, context: ContextTypes.DEFAULT_TYPE, qu
             ai_generated=True
         )
         
-        # Увеличиваем счетчик раскладов
         db.increment_reading_count(user.id)
         
-        # Отправляем результат
         response = f"🔮 *{result['name']}*\n\n"
         response += f"📝 *Вопрос:* {question}\n\n"
         response += f"{result['interpretation']}"
         
         await update.message.reply_text(response, parse_mode='Markdown', reply_markup=main_keyboard)
         
-        # Очищаем временные данные
         if 'pending_question' in context.user_data:
             del context.user_data['pending_question']
         if 'existing_reading' in context.user_data:
@@ -383,6 +287,65 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ Отменено")
     return ConversationHandler.END
 
+# ========== НОВЫЙ ОБРАБОТЧИК ДЛЯ MINI APP (ПРАВИЛЬНОЕ МЕСТО) ==========
+async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обрабатывает данные, отправленные из Mini App"""
+    web_app_data = update.effective_message.web_app_data
+    if not web_app_data:
+        return
+    
+    try:
+        data = json.loads(web_app_data.data)
+        user = update.effective_user
+        
+        print(f"📲 Mini App данные от {user.id}: {data}")
+        
+        if data.get('action') == 'spread':
+            spread_type = data.get('type')
+            question = data.get('question', 'Общий вопрос')
+            
+            spread_map = {
+                'three_cards': spreader.three_card_spread,
+                'relationship': spreader.relationship_spread,
+                'career': spreader.career_spread,
+                'celtic_cross': spreader.celtic_cross_spread,
+                'daily': spreader.daily_spread,
+                'five_cards': spreader.three_card_spread  # временно используем three_card_spread
+            }
+            
+            spread_method = spread_map.get(spread_type)
+            if not spread_method:
+                await update.message.reply_text("❌ Неизвестный тип расклада")
+                return
+            
+            await update.message.reply_text("🔮 Получаю расклад из Mini App...")
+            
+            result = await spread_method(question)
+            
+            db.save_reading(
+                user_id=user.id,
+                spread_type=result['name'],
+                question=question,
+                cards=result.get('cards', []),
+                interpretation=result['interpretation'],
+                ai_generated=True
+            )
+            db.increment_reading_count(user.id)
+            
+            response = f"🔮 *{result['name']}*\n\n"
+            response += f"📝 *Вопрос:* {question}\n\n"
+            response += result['interpretation']
+            
+            await update.message.reply_text(
+                response, 
+                parse_mode='Markdown',
+                reply_markup=main_keyboard
+            )
+            
+    except Exception as e:
+        print(f"❌ Ошибка обработки Mini App: {e}")
+        await update.message.reply_text(f"❌ Ошибка: {str(e)}")
+
 def main():
     """Запуск бота"""
     print("🔄 Запуск бота Таро...")
@@ -393,10 +356,8 @@ def main():
         print("❌ Ошибка: Не найдены токены в .env файле!")
         return
     
-    # Используем кастомный request с таймаутами
     app = Application.builder().token(TOKEN).request(request).build()
     
-    # Диалог для раскладов
     conv_handler = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex(r'^(🔮 Три карты|💖 Отношения|💼 Карьера|🌟 Карта дня)$'), handle_spread_choice)],
         states={
@@ -405,15 +366,13 @@ def main():
         fallbacks=[CommandHandler('cancel', cancel)]
     )
     
-    # Добавляем обработчики
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("history", history_command))
     app.add_handler(conv_handler)
-    
-    # Обработчик для кнопки помощи
     app.add_handler(MessageHandler(filters.Regex('^❓ Помощь$'), help_command))
     
+    # ========== ВАЖНО: ДОБАВЛЯЕМ ОБРАБОТЧИК ДЛЯ MINI APP ==========
     app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
     
     print("✅ Бот запущен! Напишите /start в Telegram")
