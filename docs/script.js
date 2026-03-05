@@ -183,7 +183,7 @@ function showLoading() {
         }
         
         .loading-title {
-            font-size: 1.8rem;
+            font-size: 2.2rem;
             color: white;
             text-shadow: 0 0 20px #8a6bff;
             margin: 30px 0 20px;
