@@ -1,0 +1,182 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    background: linear-gradient(135deg, #0a0f1e 0%, #1a1f35 50%, #0f1425 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* Звездный фон */
+body::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        radial-gradient(2px 2px at 10px 20px, #ffffff, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 30px 50px, #ffe6b0, rgba(0,0,0,0)),
+        radial-gradient(3px 3px at 70px 90px, #c0b0ff, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 150px 120px, #ffffff, rgba(0,0,0,0));
+    background-repeat: repeat;
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+.container {
+    max-width: 600px;
+    width: 100%;
+    padding: 40px 20px;
+    position: relative;
+    z-index: 1;
+}
+
+/* Главный заголовок */
+.main-title {
+    text-align: center;
+    font-size: 2.5rem;
+    font-weight: 800;
+    letter-spacing: 4px;
+    margin-bottom: 50px;
+    text-shadow: 
+        0 0 10px rgba(138, 43, 226, 0.7),
+        0 0 20px rgba(75, 0, 130, 0.5),
+        0 0 30px rgba(106, 90, 205, 0.3);
+    color: #ffffff;
+    animation: titleGlow 3s infinite alternate;
+    word-break: break-word;
+    line-height: 1.3;
+}
+
+@keyframes titleGlow {
+    0% {
+        text-shadow: 
+            0 0 10px rgba(138, 43, 226, 0.5),
+            0 0 20px rgba(75, 0, 130, 0.3);
+    }
+    100% {
+        text-shadow: 
+            0 0 20px rgba(170, 100, 255, 0.9),
+            0 0 30px rgba(120, 20, 200, 0.7),
+            0 0 40px rgba(80, 0, 150, 0.5);
+    }
+}
+
+/* Сетка для кнопок */
+.menu-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;  /* Отступы между кнопками */
+    align-items: stretch;
+}
+
+/* Переливающиеся кнопки */
+.magic-button {
+    position: relative;
+    padding: 20px 25px;
+    border: none;
+    border-radius: 15px;
+    background: linear-gradient(
+        45deg,
+        #2a1b3d,
+        #4a2b5e,
+        #6b3f7c,
+        #4a2b5e,
+        #2a1b3d
+    );
+    background-size: 400% 400%;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 
+        0 0 15px rgba(106, 90, 205, 0.5),
+        inset 0 0 20px rgba(255, 255, 255, 0.1);
+    animation: gradientMove 6s ease infinite;
+    text-align: left;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@keyframes gradientMove {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.magic-button:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 
+        0 0 30px rgba(138, 43, 226, 0.8),
+        inset 0 0 30px rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.magic-button:active {
+    transform: translateY(0) scale(0.98);
+}
+
+/* Текст на кнопках */
+.button-text {
+    display: block;
+    font-size: 1.4rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 5px;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+}
+
+.button-subtext {
+    display: block;
+    font-size: 0.9rem;
+    opacity: 0.9;
+    font-weight: 400;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.8);
+    text-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+}
+
+/* Декоративный элемент - фаза луны */
+.moon-phase {
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle at 30% 30%, #ffffff, #c0b0ff);
+    border-radius: 50%;
+    margin: 40px auto 0;
+    opacity: 0.2;
+    box-shadow: 0 0 50px #8a6bff;
+    animation: moonGlow 4s infinite alternate;
+}
+
+@keyframes moonGlow {
+    from { opacity: 0.2; box-shadow: 0 0 30px #8a6bff; }
+    to { opacity: 0.3; box-shadow: 0 0 70px #b8a0ff; }
+}
+
+/* Адаптация для мобильных */
+@media (max-width: 480px) {
+    .main-title {
+        font-size: 1.8rem;
+        letter-spacing: 2px;
+    }
+    
+    .magic-button {
+        padding: 15px 20px;
+    }
+    
+    .button-text {
+        font-size: 1.2rem;
+    }
+    
+    .button-subtext {
+        font-size: 0.8rem;
+    }
+}

@@ -3,41 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Таро расклад</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
-            padding: 16px;
-            background: #f5f5f5;
-            color: #333;
-        }
-        .card {
-            background: white;
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        button {
-            background: #8774e1;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 16px;
-            width: 100%;
-            cursor: pointer;
-        }
-    </style>
+    <title>Мистическое Таро</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>🔮 Расклад Таро</h1>
-    <div id="content">
-        <p>Выберите тип расклада:</p>
-        <button onclick="startReading('three_cards')">Три карты</button>
-        <button onclick="startReading('relationship')">Отношения</button>
-        <button onclick="startReading('career')">Карьера</button>
+    <div class="container">
+        <h1 class="main-title">🔮 ВЫБЕРИ РАСКЛАД 🔮</h1>
+        
+        <div class="menu-grid">
+            <button class="magic-button" onclick="startReading('three_cards')">
+                <span class="button-text">Три карты</span>
+                <span class="button-subtext">Прошлое · Настоящее · Будущее</span>
+            </button>
+            
+            <button class="magic-button" onclick="startReading('relationship')">
+                <span class="button-text">Отношения</span>
+                <span class="button-subtext">5 карт · Любовь · Партнерство</span>
+            </button>
+            
+            <button class="magic-button" onclick="startReading('career')">
+                <span class="button-text">Карьера</span>
+                <span class="button-subtext">4 карты · Работа · Финансы</span>
+            </button>
+            
+            <button class="magic-button" onclick="startReading('celtic_cross')">
+                <span class="button-text">Кельтский крест</span>
+                <span class="button-subtext">10 карт · Полный анализ</span>
+            </button>
+            
+            <button class="magic-button" onclick="startReading('daily')">
+                <span class="button-text">Карта дня</span>
+                <span class="button-subtext">Совет на сегодня</span>
+            </button>
+            
+            <button class="magic-button" onclick="startReading('five_cards')">
+                <span class="button-text">Пять карт</span>
+                <span class="button-subtext">Ситуация · Совет · Итог</span>
+            </button>
+        </div>
+        
+        <div class="moon-phase"></div>
     </div>
     
     <script src="script.js"></script>
