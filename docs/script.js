@@ -58,7 +58,7 @@ function showLoading() {
                 </div>
             </div>
             
-            <h2 class="loading-title">🔮 ТАСУЕМ КОЛОДУ 🔮</h2>
+            <h2 class="loading-title"> ТАСУЕМ 🔮 КОЛОДУ 🔮</h2>
             
             <div class="fortune-text">
                 <p class="fortune-line">Сосредоточьтесь на своем вопросе...</p>

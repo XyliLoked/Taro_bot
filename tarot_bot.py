@@ -103,6 +103,78 @@ async def handle_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 del context.user_data[key]
         return ConversationHandler.END
     
+    # ========== ОБРАБОТЧИК ДЛЯ MINI APP ==========
+from telegram.ext import MessageHandler, filters
+import json
+
+async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обрабатывает данные, отправленные из Mini App"""
+    # Получаем данные от Mini App
+    web_app_data = update.effective_message.web_app_data
+    if not web_app_data:
+        return
+    
+    try:
+        # Парсим JSON
+        data = json.loads(web_app_data.data)
+        user = update.effective_user
+        
+        # Логируем для отладки
+        print(f"📲 Mini App данные от {user.id}: {data}")
+        
+        # Проверяем действие
+        if data.get('action') == 'spread':
+            spread_type = data.get('type')
+            question = data.get('question', 'Общий вопрос')
+            
+            # Подбираем нужный метод расклада
+            spread_map = {
+                'three_cards': spreader.three_card_spread,
+                'relationship': spreader.relationship_spread,
+                'career': spreader.career_spread,
+                'celtic_cross': spreader.celtic_cross_spread,
+                'daily': spreader.daily_spread,
+                'five_cards': spreader.five_card_spread  # если есть такой метод
+            }
+            
+            spread_method = spread_map.get(spread_type)
+            if not spread_method:
+                await update.message.reply_text("❌ Неизвестный тип расклада")
+                return
+            
+            # Сообщаем о начале
+            await update.message.reply_text("🔮 Получаю расклад из Mini App...")
+            
+            # Выполняем расклад
+            result = await spread_method(question)
+            
+            # Сохраняем в базу
+            db.save_reading(
+                user_id=user.id,
+                spread_type=result['name'],
+                question=question,
+                cards=result.get('cards', []),
+                interpretation=result['interpretation'],
+                ai_generated=True
+            )
+            db.increment_reading_count(user.id)
+            
+            # Отправляем результат
+            response = f"🔮 *{result['name']}*\n\n"
+            response += f"📝 *Вопрос:* {question}\n\n"
+            response += result['interpretation']
+            
+            await update.message.reply_text(
+                response, 
+                parse_mode='Markdown',
+                reply_markup=main_keyboard
+            )
+            
+    except Exception as e:
+        print(f"❌ Ошибка обработки Mini App: {e}")
+        await update.message.reply_text(f"❌ Ошибка: {str(e)}")
+    
+    
     # Проверяем, не нажал ли пользователь кнопку выбора после предупреждения
     if question in ["✅ Да, хочу новый расклад", "🔄 Уточнить вопрос", "📜 Показать прошлый расклад"]:
         return await handle_choice_after_warning(update, context)
@@ -341,6 +413,8 @@ def main():
     
     # Обработчик для кнопки помощи
     app.add_handler(MessageHandler(filters.Regex('^❓ Помощь$'), help_command))
+    
+    app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, handle_web_app_data))
     
     print("✅ Бот запущен! Напишите /start в Telegram")
     app.run_polling()
