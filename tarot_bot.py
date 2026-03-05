@@ -37,13 +37,6 @@ main_keyboard = ReplyKeyboardMarkup([
     ["❓ Помощь"]
 ], resize_keyboard=True)
 
-# Клавиатура с кнопкой для Mini App
-mini_app_keyboard = ReplyKeyboardMarkup([
-    [KeyboardButton("🔮 Открыть Таро", web_app=WebAppInfo(url="https://xyliloked.github.io/Taro_bot/"))],
-    ["🔮 Три карты", "💖 Отношения"],
-    ["💼 Карьера", "🌟 Карта дня"],
-    ["❓ Помощь"]
-], resize_keyboard=True)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Приветствие"""
@@ -58,7 +51,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "🔮 Добро пожаловать в бот Таро!\n\n"
         "Я помогу вам сделать расклад на любую тему. Выберите тип расклада:",
-        reply_markup=mini_app_keyboard
+        reply_markup=main_keyboard
     )
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
