@@ -290,6 +290,10 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ========== НОВЫЙ ОБРАБОТЧИК ДЛЯ MINI APP (ПРАВИЛЬНОЕ МЕСТО) ==========
 async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обрабатывает данные, отправленные из Mini App"""
+    
+    await update.message.reply_text("✅ Данные получены! Сейчас сделаю расклад...")
+    
+    
     web_app_data = update.effective_message.web_app_data
     if not web_app_data:
         return
@@ -377,6 +381,7 @@ def main():
     
     print("✅ Бот запущен! Напишите /start в Telegram")
     app.run_polling()
+    
 
 if __name__ == "__main__":
     main()
