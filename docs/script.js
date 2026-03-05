@@ -9,9 +9,22 @@ tg.ready();
 
 // Функция для отправки расклада в бота
 function startReading(spreadType) {
+    
+    const testData = {
+        action: 'spread',
+        type: spreadType,
+        question: "Тестовый вопрос"
+    };
+    
+    alert("Отправляю тест: " + JSON.stringify(testData));
+    tg.sendData(JSON.stringify(testData));
+    console.log("Тест отправлен", testData);
+    
+    return; // Временно выходим, не делаем ничего дальше
+    
     // Получаем вопрос из текстового поля
     alert("Функция вызвана! Тип: " + spreadType);
-    
+
     const questionInput = document.getElementById('userQuestion');
     let userQuestion = '';
     
