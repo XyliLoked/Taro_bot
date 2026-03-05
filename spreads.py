@@ -68,57 +68,94 @@ class TarotSpread:
         return [self._card_to_dict(card) for card in selected]
     
     async def generate_reading(self, 
-                               spread_name: str, 
-                               positions: List[str], 
-                               cards: List[str], 
-                               question: str,
-                               model: str = "gpt-4o-mini") -> str:
+                           spread_name: str, 
+                           positions: List[str], 
+                           cards: List[str], 
+                           question: str,
+                           model: str = "gpt-4o-mini") -> str:
         """
-        Генерация интерпретации расклада через OpenAI API
+        Генерация глубокой интерпретации расклада через GPTunnel
         """
         
         # Получаем полные данные карт
         cards_data = self._get_cards_from_names(cards)
         
-        # Формируем описание расклада
-        spread_description = f"Расклад: {spread_name}\n\n"
+        combinations = self.analyze_combinations(cards_data)
+        combinations_text = "\n".join(combinations) if combinations else "Нет особых сочетаний"
+        
+        # Формируем описание расклада с акцентом на взаимосвязи
+        spread_description = f"📋 РАСКЛАД: {spread_name}\n\n"
+        spread_description += f"❓ ВОПРОС КЛИЕНТА: {question}\n\n"
+        spread_description += "🃏 КАРТЫ В РАСКЛАДЕ:\n"
+        
+        cards_list = []
         for i, (pos, card) in enumerate(zip(positions, cards_data)):
-            spread_description += f"Позиция {i+1} ({pos}): {card['name']} ({card['position']})\n"
-            spread_description += f"Ключевые слова: {', '.join(card['keywords'])}\n"
+            card_info = f"{i+1}. ПОЗИЦИЯ «{pos}»\n"
+            card_info += f"   КАРТА: {card['name']} ({card['position']})\n"
             if card['position'] == 'прямое':
-                spread_description += f"Значение: {card['upright']}\n"
+                card_info += f"   ЗНАЧЕНИЕ: {card['upright']}\n"
             else:
-                spread_description += f"Значение: {card['reversed']}\n"
-            spread_description += "\n"
+                card_info += f"   ЗНАЧЕНИЕ: {card['reversed']}\n"
+            cards_list.append(card_info)
         
-        # Создаем промпт для ИИ
-        prompt = f"""Ты — опытный таролог с 20-летним стажем. 
+        spread_description += "\n".join(cards_list)
         
-Вопрос клиента: "{question}"
+        # СОЗДАЕМ УЛУЧШЕННЫЙ ПРОМПТ
+        prompt = f"""ТЫ — МАСТЕР ТАРО И ПСИХОЛОГ
+    Ты обладаешь глубокими знаниями символизма Таро, юнгианской психологии и практической мудростью. Твоя задача — дать клиенту не просто значения карт, а целостное, терапевтическое послание.
 
-{spread_description}
+    {spread_description}
 
-Сделай глубокую, персонализированную интерпретацию этого расклада. 
-Свяжи значения карт с вопросом клиента. 
-Избегай общих фраз — дай конкретный, полезный совет.
-Используй спокойный, мудрый, поддерживающий тон.
+    ОСОБЫЕ СОЧЕТАНИЯ:
+    {combinations_text}
 
-Формат ответа:
-1. Краткое вступление (2-3 предложения)
-2. Разбор каждой позиции (связывая с вопросом)
-3. Общий вывод и совет
-"""
+    Учти эти сочетания в своей интерпретации - они очень важны!
+    
+    ИНСТРУКЦИЯ ПО ИНТЕРПРЕТАЦИИ:
+
+    1. 🔮 ОБЩАЯ АТМОСФЕРА (2-3 предложения)
+    - Какая энергия доминирует в раскладе?
+    - Как карты связаны между собой?
+    - Что это говорит о ситуации клиента?
+
+    2. 📍 РАЗБОР КАЖДОЙ ПОЗИЦИИ
+    Для каждой карты объясни:
+    - Что эта карта говорит ИМЕННО в контексте вопроса клиента
+    - Как ее значение связано с конкретной позицией
+    - Какие эмоции/мысли/действия она описывает
+
+    3. 🔗 КЛЮЧЕВЫЕ СОЧЕТАНИЯ
+    - Какие карты усиливают друг друга?
+    - Где есть напряжение или конфликт?
+    - Что это означает для развития ситуации?
+
+    4. 💡 ГЛАВНОЕ ПОСЛАНИЕ
+    - Что клиент должен понять из этого расклада?
+    - Какая мудрость здесь скрыта?
+
+    5. 🌟 ПРАКТИЧЕСКИЙ СОВЕТ
+    - Конкретные действия на основе карт
+    - На что обратить внимание
+    - Чего остерегаться
+
+    СТИЛЬ:
+    - Говори с уважением и эмпатией
+    - Избегай общих фраз и воды
+    - Будь конкретным, но мягким
+    - Используй метафоры, если уместно
+    - Заверши вдохновляющей нотой
+
+    ПОМНИ: Ты говоришь с живым человеком, который доверил тебе свои сокровенные вопросы."""
         
         try:
-            # Вызов OpenAI API через клиента
             response = self.client.chat.completions.create(
                 model=model,
                 messages=[
-                    {"role": "system", "content": "Ты опытный таролог-психолог."},
+                    {"role": "system", "content": "Ты — мудрый таролог-психолог, сочетающий глубокое знание символов Таро с психологической чуткостью."},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.8,
-                max_tokens=1000
+                temperature=0.85,  # Чуть выше для креативности
+                max_tokens=1500     # Больше токенов для детального ответа
             )
             
             return response.choices[0].message.content
@@ -126,6 +163,59 @@ class TarotSpread:
         except Exception as e:
             return f"❌ Ошибка при генерации интерпретации: {str(e)}"
     
+    def analyze_combinations(self, cards_data: List[Dict]) -> List[str]:
+        """Анализ особых сочетаний карт"""
+        combinations = []
+        names = [card["name"] for card in cards_data]
+        positions = [card.get("position", "прямое") for card in cards_data]
+        
+        # Словарь особых сочетаний
+        special_pairs = [
+            (("Шут", "Смерть"), "🦋 Полная трансформация, начало новой главы"),
+            (("Влюбленные", "Дьявол"), "❤️‍🔥 Страстная, но потенциально зависимая связь"),
+            (("Маг", "Император"), "👑 Большая власть и влияние, лидерство"),
+            (("Жрица", "Луна"), "🌙 Сильная интуиция, возможно скрытое знание"),
+            (("Солнце", "Звезда"), "⭐ Очень позитивный период, надежды сбудутся"),
+            (("Башня", "Суд"), "⚡ Неожиданное пробуждение, судьбоносные перемены"),
+            (("Колесница", "Мир"), "🏆 Успех в путешествиях или международных делах"),
+            (("Отшельник", "Луна"), "🕯️ Глубокий внутренний поиск, возможно одиночество"),
+            (("Сила", "Дьявол"), "🦁 Борьба с искушениями или зависимостями"),
+            (("Умеренность", "Звезда"), "⚖️ Исцеление, восстановление баланса"),
+        ]
+        
+        # Проверяем пары
+        for (card1, card2), meaning in special_pairs:
+            if card1 in names and card2 in names:
+                idx1 = names.index(card1)
+                idx2 = names.index(card2)
+                # Проверяем позиции (прямые/перевернутые)
+                if positions[idx1] == "прямое" and positions[idx2] == "прямое":
+                    combinations.append(f"✨ {meaning}")
+                elif positions[idx1] == "перевернутое" or positions[idx2] == "перевернутое":
+                    combinations.append(f"⚠️ {meaning} (но с осложнениями)")
+        
+        # Анализ большинства одной масти
+        suits = [card.get("suit") for card in cards_data if card.get("suit")]
+        if suits:
+            from collections import Counter
+            suit_counts = Counter(suits)
+            dominant_suit, count = suit_counts.most_common(1)[0]
+            if count >= 3:
+                suit_meanings = {
+                    "wands": "🔥 Много энергии Жезлов - действия, страсть, творчество",
+                    "cups": "💧 Много Кубков - эмоции, отношения, чувства",
+                    "swords": "⚔️ Много Мечей - мысли, конфликты, решения",
+                    "pentacles": "💰 Много Пентаклей - деньги, работа, материальное"
+                }
+                combinations.append(f"📊 Доминирует масть: {suit_meanings.get(dominant_suit, '')}")
+        
+        # Анализ старших арканов
+        major_count = sum(1 for card in cards_data if card.get("arcana") == "major")
+        if major_count >= 4:
+            combinations.append("🌟 Много Старших Арканов - судьбоносный период, важные уроки")
+        
+        return combinations
+
     async def three_card_spread(self, question: str) -> Dict[str, Any]:
         """Расклад 'Три карты' (Прошлое-Настоящее-Будущее)"""
         cards = self._get_random_cards(3)

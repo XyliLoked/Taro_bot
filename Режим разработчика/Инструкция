@@ -1,0 +1,3 @@
+Для запуска
+python "Режим разработчика\show_users.py"
+python "Режим разработчика\clear_db.py"

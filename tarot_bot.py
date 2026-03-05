@@ -1,17 +1,30 @@
 # tarot_bot.py
 import os
 import asyncio
+from datetime import datetime
 from dotenv import load_dotenv
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
-from spreads import TarotSpread  # Ваш класс из spreads.py
+from telegram.request import HTTPXRequest  # Добавить этот импорт
+from spreads import TarotSpread
+from database import db
+from config import config
 
 # Загружаем токен
 load_dotenv()
 TOKEN = os.getenv("TELEGRAM_TOKEN")
+GPTUNNEL_KEY = os.getenv("GPTUNNEL_API_KEY")
+
+# Создаем кастомный request с правильными таймаутами
+request = HTTPXRequest(
+    connect_timeout=30.0,      # ← ПРАВИЛЬНОЕ название!
+    read_timeout=30.0,         # 30 секунд на чтение
+    write_timeout=30.0,        # 30 секунд на запись
+    pool_timeout=30.0          # 30 секунд на pool
+)
 
 # Создаем объект для раскладов
-spreader = TarotSpread(gptunnel_api_key=os.getenv("GPTUNNEL_API_KEY"))
+spreader = TarotSpread(gptunnel_api_key=GPTUNNEL_KEY)
 
 # Состояния для диалога
 QUESTION = 1
@@ -25,6 +38,15 @@ main_keyboard = ReplyKeyboardMarkup([
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Приветствие"""
+    # Сохраняем пользователя в БД при старте
+    user = update.effective_user
+    db.get_or_create_user(
+        telegram_id=user.id,
+        username=user.username,
+        first_name=user.first_name,
+        last_name=user.last_name
+    )
+    
     await update.message.reply_text(
         "🔮 Добро пожаловать в бот Таро!\n\n"
         "Я помогу вам сделать расклад на любую тему. Выберите тип расклада:",
@@ -34,15 +56,18 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Помощь"""
     await update.message.reply_text(
-        "🔮 Как пользоваться ботом:\n\n"
+        "🔮 *Как пользоваться ботом:*\n\n"
         "1. Выберите тип расклада из меню\n"
         "2. Напишите ваш вопрос\n"
         "3. Получите интерпретацию\n\n"
-        "Доступные расклады:\n"
-        "- Три карты (прошлое/настоящее/будущее)\n"
-        "- Отношения (5 карт)\n"
-        "- Карьера (4 карты)\n"
-        "- Карта дня (совет на сегодня)"
+        "*Доступные расклады:*\n"
+        "🔮 Три карты - прошлое/настоящее/будущее\n"
+        "💖 Отношения - анализ отношений\n"
+        "💼 Карьера - вопросы работы\n"
+        "🌟 Карта дня - совет на сегодня\n\n"
+        "*Команды:*\n"
+        "/history - история раскладов",
+        parse_mode='Markdown'
     )
 
 async def handle_spread_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -57,9 +82,163 @@ async def handle_spread_choice(update: Update, context: ContextTypes.DEFAULT_TYP
     return QUESTION
 
 async def handle_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработка вопроса и выполнение расклада"""
+    """Обработка вопроса и выполнение расклада с проверкой на повторы"""
     question = update.message.text
-    spread_type = context.user_data.get('spread_type', 'Три карты')
+    user = update.effective_user
+    spread_type = context.user_data.get('spread_type', '🔮 Три карты')
+    
+    # ✅ НОВАЯ ПРОВЕРКА: если это ответ "Нет, спасибо" после истории
+    if question == "❌ Нет, спасибо" and context.user_data.get('after_history'):
+        # Очищаем флаг
+        del context.user_data['after_history']
+        
+        await update.message.reply_text(
+            "Хорошо! Если захотите сделать расклад позже - просто выберите тип расклада в меню.",
+            reply_markup=main_keyboard
+        )
+        # Очищаем ВСЕ временные данные
+        keys_to_clear = ['pending_question', 'existing_reading', 'spread_type', 'current_question', 'after_history']
+        for key in keys_to_clear:
+            if key in context.user_data:
+                del context.user_data[key]
+        return ConversationHandler.END
+    
+    # Проверяем, не нажал ли пользователь кнопку выбора после предупреждения
+    if question in ["✅ Да, хочу новый расклад", "🔄 Уточнить вопрос", "📜 Показать прошлый расклад"]:
+        return await handle_choice_after_warning(update, context)
+    
+    # Получаем или создаем пользователя в БД
+    db.get_or_create_user(
+        telegram_id=user.id,
+        username=user.username,
+        first_name=user.first_name,
+        last_name=user.last_name
+    )
+    
+    # 🔍 ПРОВЕРКА НА ПОВТОРНЫЙ ВОПРОС СЕГОДНЯ
+    from datetime import datetime
+    today = datetime.now().date()
+    
+    # Получаем последние расклады пользователя
+    recent_readings = db.get_user_history(user.id, limit=10)
+    
+    # Ищем похожий вопрос сегодня
+    similar_reading = None
+    for reading in recent_readings:
+        reading_date = reading.created_at.date()
+        if reading_date == today:
+            # Простая проверка похожести вопроса
+            if question.lower() in reading.question.lower() or reading.question.lower() in question.lower():
+                similar_reading = reading
+                break
+    
+    if similar_reading:
+        # Сохраняем информацию для последующего выбора
+        context.user_data['pending_question'] = question
+        context.user_data['spread_type'] = spread_type
+        context.user_data['existing_reading'] = {
+            'question': similar_reading.question,
+            'interpretation': similar_reading.interpretation,
+            'date': similar_reading.created_at
+        }
+        
+        # Предупреждаем, но даем выбор
+        keyboard = [
+            ["✅ Да, хочу новый расклад"],
+            ["🔄 Уточнить вопрос"],
+            ["📜 Показать прошлый расклад"]
+        ]
+        reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
+        
+        await update.message.reply_text(
+            "🔮 *Вы уже делали расклад на похожий вопрос сегодня.*\n\n"
+            "В традиции Таро считается, что повторный расклад на тот же вопрос может запутать, "
+            "так как карты показывают текущий момент, который еще не успел измениться.\n\n"
+            "Что хотите сделать?",
+            reply_markup=reply_markup,
+            parse_mode='Markdown'
+        )
+        return QUESTION  # Остаемся в том же состоянии
+    
+    # Если нет повтора - делаем расклад
+    return await perform_reading(update, context, question, spread_type)
+
+async def handle_choice_after_warning(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработка выбора после предупреждения"""
+    choice = update.message.text
+    user = update.effective_user
+    
+    if choice == "✅ Да, хочу новый расклад":
+        # Пользователь хочет новый расклад
+        question = context.user_data.get('pending_question')
+        spread_type = context.user_data.get('spread_type', '🔮 Три карты')
+        
+        await update.message.reply_text("🔮 Хорошо, делаю новый расклад...")
+        return await perform_reading(update, context, question, spread_type)
+    
+    elif choice == "🔄 Уточнить вопрос":
+        # Пользователь хочет переформулировать
+        await update.message.reply_text(
+            "📝 Напишите уточненную версию вашего вопроса.\n"
+            "Постарайтесь сформулировать его иначе или добавить детали:"
+        )
+        return QUESTION
+    
+    elif choice == "📜 Показать прошлый расклад":
+        # Показываем прошлый расклад
+        existing = context.user_data.get('existing_reading', {})
+        if existing:
+            response = f"📜 *Ваш прошлый расклад*\n"
+            response += f"📝 *Вопрос:* {existing['question']}\n"
+            response += f"🕐 *Когда:* {existing['date'].strftime('%d.%m.%Y %H:%M')}\n\n"
+            response += f"{existing['interpretation']}"
+            
+            try:
+                await update.message.reply_text(response, parse_mode='Markdown')
+            except:
+                clean_response = response.replace('*', '').replace('_', '')
+                await update.message.reply_text(clean_response)
+            
+            # Сохраняем, что мы сейчас в состоянии "после показа истории"
+            context.user_data['after_history'] = True
+            
+            keyboard = [
+                ["✅ Да, хочу новый расклад"],
+                ["❌ Нет, спасибо"]
+            ]
+            reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
+            
+            await update.message.reply_text(
+                "Хотите сделать новый расклад на эту тему?",
+                reply_markup=reply_markup
+            )
+            return QUESTION
+        
+        # Если нет сохраненного (ошибка)
+        return await perform_reading(update, context, 
+                                     context.user_data.get('pending_question'), 
+                                     context.user_data.get('spread_type'))
+    
+    elif choice == "❌ Нет, спасибо":
+        await update.message.reply_text(
+            "Хорошо! Если захотите сделать расклад позже - просто выберите тип расклада в меню.",
+            reply_markup=main_keyboard
+        )
+        # Очищаем ВСЕ временные данные
+        keys_to_clear = ['pending_question', 'existing_reading', 'spread_type', 'current_question']
+        for key in keys_to_clear:
+            if key in context.user_data:
+                del context.user_data[key]
+        return ConversationHandler.END
+    
+    else:
+        # Если пришел другой текст (например, новый вопрос)
+        return await perform_reading(update, context, choice, 
+                                     context.user_data.get('spread_type', '🔮 Три карты'))
+
+async def perform_reading(update: Update, context: ContextTypes.DEFAULT_TYPE, question: str, spread_type: str):
+    """Выполнение расклада (вынесено в отдельную функцию)"""
+    user = update.effective_user
     
     await update.message.reply_text("🔮 Делаю расклад... Подождите немного...")
     
@@ -76,17 +255,56 @@ async def handle_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             result = await spreader.three_card_spread(question)
         
+        # Сохраняем расклад в БД
+        db.save_reading(
+            user_id=user.id,
+            spread_type=spread_type,
+            question=question,
+            cards=result['cards'],
+            interpretation=result['interpretation'],
+            ai_generated=True
+        )
+        
+        # Увеличиваем счетчик раскладов
+        db.increment_reading_count(user.id)
+        
         # Отправляем результат
         response = f"🔮 *{result['name']}*\n\n"
         response += f"📝 *Вопрос:* {question}\n\n"
         response += f"{result['interpretation']}"
         
-        await update.message.reply_text(response, parse_mode='Markdown')
+        await update.message.reply_text(response, parse_mode='Markdown', reply_markup=main_keyboard)
+        
+        # Очищаем временные данные
+        if 'pending_question' in context.user_data:
+            del context.user_data['pending_question']
+        if 'existing_reading' in context.user_data:
+            del context.user_data['existing_reading']
         
     except Exception as e:
-        await update.message.reply_text(f"❌ Ошибка: {str(e)}")
+        await update.message.reply_text(f"❌ Ошибка: {str(e)}", reply_markup=main_keyboard)
     
     return ConversationHandler.END
+
+async def history_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Показать историю раскладов"""
+    user = update.effective_user
+    
+    readings = db.get_user_history(user.id, limit=5)
+    
+    if not readings:
+        await update.message.reply_text("📭 У вас пока нет сохраненных раскладов.")
+        return
+    
+    response = "📜 *Ваши последние расклады:*\n\n"
+    
+    for i, r in enumerate(readings, 1):
+        date = r.created_at.strftime("%d.%m.%Y %H:%M")
+        response += f"{i}. *{date}*\n"
+        response += f"   🔮 {r.spread_type}\n"
+        response += f"   📝 {r.question[:50]}...\n\n"
+    
+    await update.message.reply_text(response, parse_mode='Markdown')
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Отмена"""
@@ -96,8 +314,15 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def main():
     """Запуск бота"""
     print("🔄 Запуск бота Таро...")
+    print(f"Токен Telegram: {TOKEN[:10]}...")
+    print(f"Ключ GPTunnel: {GPTUNNEL_KEY[:10]}...")
     
-    app = Application.builder().token(TOKEN).build()
+    if not TOKEN or not GPTUNNEL_KEY:
+        print("❌ Ошибка: Не найдены токены в .env файле!")
+        return
+    
+    # Используем кастомный request с таймаутами
+    app = Application.builder().token(TOKEN).request(request).build()
     
     # Диалог для раскладов
     conv_handler = ConversationHandler(
@@ -108,9 +333,14 @@ def main():
         fallbacks=[CommandHandler('cancel', cancel)]
     )
     
+    # Добавляем обработчики
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CommandHandler("history", history_command))
     app.add_handler(conv_handler)
+    
+    # Обработчик для кнопки помощи
+    app.add_handler(MessageHandler(filters.Regex('^❓ Помощь$'), help_command))
     
     print("✅ Бот запущен! Напишите /start в Telegram")
     app.run_polling()

@@ -91,12 +91,12 @@ class Database:
             import json
             cards_json = json.dumps([
                 {
-                    'card': card['card'].name,
-                    'position': card['position'],
-                    'is_upright': card['is_upright']
+                    'card': card['name'] if isinstance(card, dict) else card.name,  # Исправлено!
+                    'position': card['position'] if isinstance(card, dict) else 'прямое',  # Исправлено!
+                    'is_upright': card['position'] == 'прямое' if isinstance(card, dict) else True  # Исправлено!
                 }
                 for card in cards
-            ])
+            ], ensure_ascii=False)
             
             reading = Reading(
                 user_id=user_id,
@@ -110,6 +110,10 @@ class Database:
             session.add(reading)
             session.commit()
             return reading.id
+        except Exception as e:
+            print(f"Ошибка сохранения в БД: {e}")  # Для отладки
+            session.rollback()
+            return None
         finally:
             session.close()
     
