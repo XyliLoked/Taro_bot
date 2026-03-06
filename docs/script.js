@@ -11,65 +11,41 @@ tg.ready();
 console.log("Telegram WebApp initialized:", tg);
 
 // Функция для отправки расклада в бота
-// Функция для отправки расклада в бота
 function startReading(spreadType) {
-    console.log("=== НАЧАЛО ФУНКЦИИ startReading ===");
-    console.log("Тип расклада:", spreadType);
-    
-    // Проверяем Telegram WebApp
-    console.log("Telegram WebApp доступен:", !!window.Telegram);
-    if (window.Telegram) {
-        console.log("Telegram.WebApp:", window.Telegram.WebApp);
-    }
-    
     // Получаем вопрос из текстового поля
     const questionInput = document.getElementById('userQuestion');
-    console.log("Поле ввода найдено:", !!questionInput);
-    
-    let userQuestion = '';
-    if (questionInput) {
-        userQuestion = questionInput.value.trim();
-        console.log("Текст вопроса:", userQuestion || "(пусто)");
-    }
-    
-    // Если вопрос пустой, используем стандартный
+    let userQuestion = questionInput ? questionInput.value.trim() : '';
     const finalQuestion = userQuestion || "Общий вопрос без уточнения";
-    console.log("Итоговый вопрос:", finalQuestion);
     
     // Показываем загрузку
-    console.log("Показываю загрузку...");
     showLoading();
     
-    // Данные для отправки в бота
-    const data = {
-        action: 'spread',
-        type: spreadType,
-        question: finalQuestion
-    };
-    console.log("Данные для отправки:", data);
-    console.log("JSON строка:", JSON.stringify(data));
+    // Получаем initData (там есть query_id)
+    const initData = window.Telegram.WebApp.initData;
+    console.log("initData:", initData);
     
-    // Отправляем данные в бота
-    if (window.Telegram && window.Telegram.WebApp) {
-        try {
-            window.Telegram.WebApp.sendData(JSON.stringify(data));
-            console.log("✅ tg.sendData() выполнен успешно");
-            
-            // Проверяем, что после отправки нет ошибок
-            setTimeout(() => {
-                console.log("Проверка через 1 секунду: приложение всё ещё открыто");
-            }, 1000);
-            
-        } catch (error) {
-            console.error("❌ Ошибка при отправке:", error);
-            alert("Ошибка отправки: " + error.message);
-        }
-    } else {
-        console.error("❌ Telegram WebApp не доступен!");
-        alert("Ошибка: Telegram WebApp не инициализирован");
-    }
-    
-    console.log("=== КОНЕЦ ФУНКЦИИ startReading ===");
+    // Отправляем данные НЕ через tg.sendData, а через fetch на свой сервер
+    fetch('https://tarobot-production-99c8.up.railway.app/webapp-data', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            initData: initData, // ← Telegram сам подставит сюда query_id
+            spreadType: spreadType,
+            question: finalQuestion
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Ответ от сервера:', data);
+        // Сервер сам отправит сообщение в чат через answerWebAppQuery
+        window.Telegram.WebApp.close();
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        alert('Ошибка при отправке запроса');
+    });
 }
 
 // Функция показа загрузки

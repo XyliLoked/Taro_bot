@@ -16,6 +16,7 @@ load_dotenv()
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 GPTUNNEL_KEY = os.getenv("GPTUNNEL_API_KEY")
 
+
 # Создаем кастомный request с правильными таймаутами
 request = HTTPXRequest(
     connect_timeout=30.0,
@@ -438,20 +439,43 @@ def main():
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
-class SimpleHandler(BaseHTTPRequestHandler):
+class WebAppHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
         self.wfile.write(b"Tarot Bot is running!")
     
+    def do_POST(self):
+        if self.path == '/webapp-data':
+            # Получаем длину данных
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            
+            try:
+                data = json.loads(post_data.decode('utf-8'))
+                print(f"📥 Получен POST запрос: {data}")
+                
+                # Здесь будем обрабатывать данные позже
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "received"}).encode())
+                
+            except Exception as e:
+                print(f"❌ Ошибка обработки POST: {e}")
+                self.send_response(500)
+                self.end_headers()
+        else:
+            self.send_response(404)
+            self.end_headers()
+    
     def log_message(self, format, *args):
-        # Не захламляем логи
-        pass
+        pass  # Не выводим лишние логи от HTTP-сервера
 
 def run_http_server():
     port = int(os.environ.get("PORT", 8080))
-    server = HTTPServer(('0.0.0.0', port), SimpleHandler)
+    server = HTTPServer(('0.0.0.0', port), WebAppHandler)
     print(f"📡 HTTP server listening on port {port}")
     server.serve_forever()
 
