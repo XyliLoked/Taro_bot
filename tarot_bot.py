@@ -529,10 +529,13 @@ class WebAppHandler(BaseHTTPRequestHandler):
                     
                     spread_method = spread_map.get(spread_type)
                     if spread_method:
-                        # Запускаем асинхронную функцию в отдельном потоке
+                        # Работа с event loop
                         import asyncio
-                        loop = asyncio.new_event_loop()
-                        asyncio.set_event_loop(loop)
+                        try:
+                            loop = asyncio.get_event_loop()
+                        except RuntimeError:
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
                         
                         # Получаем результат расклада
                         result = loop.run_until_complete(spread_method(question))
@@ -551,21 +554,12 @@ class WebAppHandler(BaseHTTPRequestHandler):
                         response_text = f"🔮 *{result['name']}*\n\n"
                         response_text += f"📝 *Вопрос:* {question}\n\n"
                         response_text += result['interpretation']
-                        
-                        # Отправляем ответ через Telegram API
-                        asyncio.run(send_web_app_answer(query_id, response_text))
-                        
-                        # Отвечаем Mini App, что всё ок
-                        self.wfile.write(json.dumps({"status": "success"}).encode())
-    
-                        # Это требует отдельной реализации
                         print(f"✅ Готов ответ длиной {len(response_text)}")
                         
-                        # Пока просто пишем в логи
-                        self.wfile.write(json.dumps({
-                            "status": "success",
-                            "message": "Расклад готов, но отправка через Telegram API ещё не реализована"
-                        }).encode())
+                        # Отправляем ответ через Telegram API
+                        loop.run_until_complete(send_web_app_answer(query_id, response_text))
+                        
+                        self.wfile.write(json.dumps({"status": "success"}).encode())
                         
                     else:
                         print(f"❌ Неизвестный тип расклада: {spread_type}")
