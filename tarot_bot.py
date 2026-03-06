@@ -471,23 +471,25 @@ class WebAppHandler(BaseHTTPRequestHandler):
                 data = json.loads(post_data.decode('utf-8'))
                 print(f"📥 Получен POST запрос: {data}")
                 
-                # 👇 ВАЖНО: отправляем ответ обратно
-                response_data = {"status": "success", "message": "Данные получены"}
-                self.wfile.write(json.dumps(response_data).encode())
+                # Проверяем, что это запрос на расклад
+                if data.get('action') == 'spread':
+                    spread_type = data.get('type')
+                    question = data.get('question', 'Общий вопрос')
+                    
+                    # Здесь нужно получить chat_id!
+                    # Пока нет chat_id - не можем отправить ответ
+                    print(f"⚠️ Нет chat_id, ответ не будет отправлен")
+                    
+                    # Временно отправляем тестовый ответ (позже заменим)
+                    response_data = {
+                        "status": "received", 
+                        "message": f"Получен запрос: {spread_type} - {question}"
+                    }
+                    self.wfile.write(json.dumps(response_data).encode())
                 
             except Exception as e:
                 print(f"❌ Ошибка: {e}")
-                # 👇 Отправляем ошибку
-                self.send_response(500)
-                self.end_headers()
                 self.wfile.write(json.dumps({"error": str(e)}).encode())
-        else:
-            self.send_response(404)
-            self.end_headers()
-            self.wfile.write(json.dumps({"error": "Not found"}).encode())
-        
-    def log_message(self, format, *args):
-        pass
 
 def run_http_server():
     port = int(os.environ.get("PORT", 8080))
