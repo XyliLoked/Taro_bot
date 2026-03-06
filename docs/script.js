@@ -328,7 +328,7 @@ function showResult(data) {
     `;
 }
 
-// Функция для отображения результата в Mini App
+// Функция для отображения результата в виде карт
 function displayResult(data) {
     const content = document.getElementById('content');
     if (!content) {
@@ -336,46 +336,113 @@ function displayResult(data) {
         return;
     }
 
-    let resultHtml = '';
+    if (!data || data.status !== 'success' || !data.interpretation) {
+        showError(data?.error || 'Неизвестная ошибка');
+        return;
+    }
 
-    // Проверяем, что данные пришли и интерпретация существует
-    if (data && data.status === 'success' && data.interpretation) {
-        // Заменяем переносы строк на HTML-теги <br>
-        // И удаляем Markdown-звёздочки, так как мы в HTML
-        const cleanText = data.interpretation
-            .replace(/\*\*/g, '<strong>') // Жирный текст ** -> <strong>
-            .replace(/\*/g, '') // Убираем одиночные *
-            .replace(/\n/g, '<br>'); // Переносы строк
+    // Разбираем текст на секции по заголовкам
+    const text = data.interpretation;
+    
+    // Регулярные выражения для поиска секций
+    const sections = [
+        { emoji: '🔮', title: 'ОБЩАЯ АТМОСФЕРА', pattern: /🔮?\s*ОБЩАЯ\s*АТМОСФЕРА:?\s*([\s\S]*?)(?=📍|💡|🌟|✨|$)/i },
+        { emoji: '📍', title: 'РАЗБОР ПОЗИЦИЙ', pattern: /📍?\s*РАЗБОР\s*КАЖДОЙ\s*ПОЗИЦИИ:?\s*([\s\S]*?)(?=💡|🌟|✨|$)/i },
+        { emoji: '💡', title: 'ГЛАВНОЕ ПОСЛАНИЕ', pattern: /💡?\s*ГЛАВНОЕ\s*ПОСЛАНИЕ:?\s*([\s\S]*?)(?=🌟|✨|$)/i },
+        { emoji: '🌟', title: 'ПРАКТИЧЕСКИЙ СОВЕТ', pattern: /🌟?\s*ПРАКТИЧЕСКИЙ\s*СОВЕТ:?\s*([\s\S]*?)(?=✨|$)/i },
+        { emoji: '✨', title: 'ПОЖЕЛАНИЕ', pattern: /✨?\s*ПОЖЕЛАНИЕ:?\s*([\s\S]*?)$/i }
+    ];
 
-        resultHtml = `
-            <div class="result-container">
-                <h2 class="result-title">🔮 ВАШ РАСКЛАД 🔮</h2>
-                <div class="interpretation">
-                    ${cleanText}
+    let cardsHtml = '';
+    
+    sections.forEach(section => {
+        const match = text.match(section.pattern);
+        if (match && match[1].trim()) {
+            // Очищаем текст от лишних символов и форматируем
+            let sectionText = match[1].trim()
+                .replace(/\*\*/g, '<strong>')
+                .replace(/\*/g, '')
+                .replace(/\n/g, '<br>');
+            
+            cardsHtml += `
+                <div class="tarot-card">
+                    <div class="card-header">
+                        <span class="card-emoji">${section.emoji}</span>
+                        <h3 class="card-title">${section.title}</h3>
+                    </div>
+                    <div class="card-content">
+                        ${sectionText}
+                    </div>
                 </div>
-                <button class="magic-button" onclick="window.location.reload()" style="margin-top: 30px;">
-                    <span class="button-text">НОВЫЙ РАСКЛАД</span>
-                </button>
-            </div>
-        `;
-    } else {
-        // Если данных нет или ошибка
-        const errorMsg = data?.error || 'Неизвестная ошибка';
-        resultHtml = `
-            <div class="result-container">
-                <h2 class="result-title">❌ ОШИБКА</h2>
-                <div class="error-message">
-                    ${errorMsg}
+            `;
+        }
+    });
+
+    // Если не нашли ни одной секции, показываем весь текст как есть
+    if (!cardsHtml) {
+        cardsHtml = `
+            <div class="tarot-card">
+                <div class="card-content">
+                    ${data.interpretation.replace(/\n/g, '<br>')}
                 </div>
-                <button class="magic-button" onclick="window.location.reload()" style="margin-top: 30px;">
-                    <span class="button-text">ПОПРОБОВАТЬ СНОВА</span>
-                </button>
             </div>
         `;
     }
 
-    content.innerHTML = resultHtml;
-    console.log("Результат отображён в Mini App");
+    // ⭐ ВОТ ЗДЕСЬ ВСТАВЛЯЕМ РЕЗУЛЬТАТ НА СТРАНИЦУ
+    content.innerHTML = `
+        <div class="result-container">
+            <h2 class="result-title">🔮 ВАШ РАСКЛАД 🔮</h2>
+            <div class="cards-deck">
+                ${cardsHtml}
+            </div>
+            <button class="magic-button" onclick="window.location.reload()" style="margin-top: 30px;">
+                <span class="button-text">НОВЫЙ РАСКЛАД</span>
+            </button>
+        </div>
+    `;
+
+    // ⭐ И ПИШЕМ В КОНСОЛЬ
+    console.log("✅ Результат отображён в Mini App");
+}
+
+function showError(message) {
+    const content = document.getElementById('content');
+    if (!content) return;
+    
+    content.innerHTML = `
+        <div class="result-container">
+            <h2 class="result-title">❌ ОШИБКА</h2>
+            <div class="tarot-card error-card">
+                <div class="card-content">
+                    ${message}
+                </div>
+            </div>
+            <button class="magic-button" onclick="window.location.reload()" style="margin-top: 30px;">
+                <span class="button-text">ПОПРОБОВАТЬ СНОВА</span>
+            </button>
+        </div>
+    `;
+    console.log("❌ Ошибка отображена в Mini App:", message);
+}
+
+function showError(message) {
+    const content = document.getElementById('content');
+    if (!content) return;
+    
+    content.innerHTML = `
+        <div class="result-container">
+            <h2 class="result-title">❌ ОШИБКА</h2>
+            <div class="tarot-card error-card">
+                <div class="card-content">
+                    ${message}
+                </div>
+            </div>
+            <button class="magic-button" onclick="window.location.reload()" style="margin-top: 30px;">
+                <span class="button-text">ПОПРОБОВАТЬ СНОВА</span>
+            </button>
+        </div>
+    `;
 }
 
 // Слушаем события от Telegram
