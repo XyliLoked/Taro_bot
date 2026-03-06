@@ -568,7 +568,8 @@ class WebAppHandler(BaseHTTPRequestHandler):
                         self.wfile.write(json.dumps(response_data).encode())
                         print(f"✅ Данные отправлены обратно в Mini App")
 
-                        self.wfile.write(json.dumps({"status": "success"}).encode())
+                        # ⛔ ВОТ ЭТУ СТРОКУ НУЖНО УДАЛИТЬ:
+                        #self.wfile.write(json.dumps({"status": "success"}).encode())
                         
                     else:
                         print(f"❌ Неизвестный тип расклада: {spread_type}")

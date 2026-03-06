@@ -195,11 +195,14 @@ function showLoading() {
         }
         
         .loading-title {
-            font-size: 2.2rem;
+            text-align: center;
+            font-size: 2rem;
             color: white;
             text-shadow: 0 0 20px #8a6bff;
-            margin: 30px 0 20px;
+            margin: 30px auto 20px;  /* auto по бокам для центрирования */
             animation: titleFlicker 2s infinite;
+            width: 100%;              /* занимает всю ширину */
+            display: block;           /* блочный элемент */
         }
         
         @keyframes titleFlicker {
