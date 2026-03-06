@@ -443,10 +443,19 @@ class WebAppHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
+        self.send_header('Access-Control-Allow-Origin', 'https://xyliloked.github.io')
         self.end_headers()
         self.wfile.write(b"Tarot Bot is running!")
     
     def do_POST(self):
+        # Добавляем CORS заголовки для всех ответов
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', 'https://xyliloked.github.io')
+        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
+        
         if self.path == '/webapp-data':
             # Получаем длину данных
             content_length = int(self.headers['Content-Length'])
@@ -457,9 +466,6 @@ class WebAppHandler(BaseHTTPRequestHandler):
                 print(f"📥 Получен POST запрос: {data}")
                 
                 # Здесь будем обрабатывать данные позже
-                self.send_response(200)
-                self.send_header('Content-type', 'application/json')
-                self.end_headers()
                 self.wfile.write(json.dumps({"status": "received"}).encode())
                 
             except Exception as e:
@@ -470,8 +476,16 @@ class WebAppHandler(BaseHTTPRequestHandler):
             self.send_response(404)
             self.end_headers()
     
+    def do_OPTIONS(self):
+        # Важно! Браузер сначала отправляет OPTIONS запрос
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', 'https://xyliloked.github.io')
+        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
+    
     def log_message(self, format, *args):
-        pass  # Не выводим лишние логи от HTTP-сервера
+        pass
 
 def run_http_server():
     port = int(os.environ.get("PORT", 8080))
