@@ -440,49 +440,42 @@ import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 class WebAppHandler(BaseHTTPRequestHandler):
+    def _send_cors_headers(self):
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+    
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self._send_cors_headers()
+        self.end_headers()
+    
     def do_GET(self):
         self.send_response(200)
+        self._send_cors_headers()
         self.send_header('Content-type', 'text/html')
-        self.send_header('Access-Control-Allow-Origin', 'https://xyliloked.github.io')
         self.end_headers()
         self.wfile.write(b"Tarot Bot is running!")
     
     def do_POST(self):
-        # Добавляем CORS заголовки для всех ответов
         self.send_response(200)
+        self._send_cors_headers()
         self.send_header('Content-type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', 'https://xyliloked.github.io')
-        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         self.end_headers()
         
         if self.path == '/webapp-data':
-            # Получаем длину данных
             content_length = int(self.headers['Content-Length'])
             post_data = self.rfile.read(content_length)
             
             try:
                 data = json.loads(post_data.decode('utf-8'))
                 print(f"📥 Получен POST запрос: {data}")
-                
-                # Здесь будем обрабатывать данные позже
                 self.wfile.write(json.dumps({"status": "received"}).encode())
-                
             except Exception as e:
-                print(f"❌ Ошибка обработки POST: {e}")
-                self.send_response(500)
-                self.end_headers()
+                print(f"❌ Ошибка: {e}")
+                self.wfile.write(json.dumps({"error": str(e)}).encode())
         else:
-            self.send_response(404)
-            self.end_headers()
-    
-    def do_OPTIONS(self):
-        # Важно! Браузер сначала отправляет OPTIONS запрос
-        self.send_response(200)
-        self.send_header('Access-Control-Allow-Origin', 'https://xyliloked.github.io')
-        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-        self.end_headers()
+            self.wfile.write(json.dumps({"error": "Not found"}).encode())
     
     def log_message(self, format, *args):
         pass
