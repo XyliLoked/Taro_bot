@@ -470,13 +470,22 @@ class WebAppHandler(BaseHTTPRequestHandler):
             try:
                 data = json.loads(post_data.decode('utf-8'))
                 print(f"📥 Получен POST запрос: {data}")
-                self.wfile.write(json.dumps({"status": "received"}).encode())
+                
+                # 👇 ВАЖНО: отправляем ответ обратно
+                response_data = {"status": "success", "message": "Данные получены"}
+                self.wfile.write(json.dumps(response_data).encode())
+                
             except Exception as e:
                 print(f"❌ Ошибка: {e}")
+                # 👇 Отправляем ошибку
+                self.send_response(500)
+                self.end_headers()
                 self.wfile.write(json.dumps({"error": str(e)}).encode())
         else:
+            self.send_response(404)
+            self.end_headers()
             self.wfile.write(json.dumps({"error": "Not found"}).encode())
-    
+        
     def log_message(self, format, *args):
         pass
 
