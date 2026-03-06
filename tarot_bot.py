@@ -11,6 +11,11 @@ from spreads import TarotSpread
 from database import db
 from config import config
 
+# Создаём отдельный экземпляр бота для отправки ответов
+load_dotenv()
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+GPTUNNEL_KEY = os.getenv("GPTUNNEL_API_KEY")
+
 # Загружаем токен
 load_dotenv()
 TOKEN = os.getenv("TELEGRAM_TOKEN")
@@ -27,6 +32,9 @@ request = HTTPXRequest(
 
 # Создаем объект для раскладов
 spreader = TarotSpread(gptunnel_api_key=GPTUNNEL_KEY)
+
+from telegram import Bot
+telegram_bot = Bot(token=TELEGRAM_TOKEN)
 
 # Состояния для диалога
 QUESTION = 1
@@ -288,7 +296,27 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Отмена"""
     await update.message.reply_text("❌ Отменено")
     return ConversationHandler.END
+import asyncio
 
+async def send_web_app_answer(query_id: str, text: str):
+    """Отправляет ответ через answerWebAppQuery"""
+    from telegram import InlineQueryResultArticle, InputTextMessageContent
+    
+    result = InlineQueryResultArticle(
+        id='1',
+        title='Результат расклада',
+        input_message_content=InputTextMessageContent(
+            text,
+            parse_mode='Markdown'
+        )
+    )
+    
+    await telegram_bot.answer_web_app_query(
+        web_app_query_id=query_id,
+        result=result
+    )
+    print(f"✅ Ответ отправлен через answerWebAppQuery для query_id {query_id}")
+    
 # ========== НОВЫЙ ОБРАБОТЧИК ДЛЯ MINI APP (ПРАВИЛЬНОЕ МЕСТО) ==========
 async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обрабатывает данные, отправленные из Mini App"""
@@ -469,28 +497,86 @@ class WebAppHandler(BaseHTTPRequestHandler):
             
             try:
                 data = json.loads(post_data.decode('utf-8'))
-                print(f"📥 Получен POST запрос: {data}")
+                print(f"📥 Получен POST запрос:")
+                print(f"   action: {data.get('action')}")
+                print(f"   type: {data.get('type')}")
+                print(f"   question: {data.get('question')}")
                 
-                # Проверяем, что это запрос на расклад
+                # Парсим initData
+                import urllib.parse
+                init_data = data.get('initData', '')
+                parsed = urllib.parse.parse_qs(init_data)
+                
+                query_id = parsed.get('query_id', [''])[0]
+                user_str = parsed.get('user', ['{}'])[0]
+                user = json.loads(user_str)
+                
+                print(f"   query_id: {query_id}")
+                print(f"   user_id: {user.get('id')}")
+                
                 if data.get('action') == 'spread':
                     spread_type = data.get('type')
-                    question = data.get('question', 'Общий вопрос')
+                    question = data.get('question')
                     
-                    # Здесь нужно получить chat_id!
-                    # Пока нет chat_id - не можем отправить ответ
-                    print(f"⚠️ Нет chat_id, ответ не будет отправлен")
-                    
-                    # Временно отправляем тестовый ответ (позже заменим)
-                    response_data = {
-                        "status": "received", 
-                        "message": f"Получен запрос: {spread_type} - {question}"
+                    # Выбираем нужный метод
+                    spread_map = {
+                        'three_cards': spreader.three_card_spread,
+                        'relationship': spreader.relationship_spread,
+                        'career': spreader.career_spread,
+                        'celtic_cross': spreader.celtic_cross_spread,
+                        'daily': spreader.daily_spread,
                     }
-                    self.wfile.write(json.dumps(response_data).encode())
+                    
+                    spread_method = spread_map.get(spread_type)
+                    if spread_method:
+                        # Запускаем асинхронную функцию в отдельном потоке
+                        import asyncio
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        
+                        # Получаем результат расклада
+                        result = loop.run_until_complete(spread_method(question))
+                        
+                        # Сохраняем в БД
+                        db.save_reading(
+                            user_id=user.get('id'),
+                            spread_type=result['name'],
+                            question=question,
+                            cards=result.get('cards', []),
+                            interpretation=result['interpretation'],
+                            ai_generated=True
+                        )
+                        
+                        # Формируем ответ
+                        response_text = f"🔮 *{result['name']}*\n\n"
+                        response_text += f"📝 *Вопрос:* {question}\n\n"
+                        response_text += result['interpretation']
+                        
+                        # Отправляем ответ через Telegram API
+                        asyncio.run(send_web_app_answer(query_id, response_text))
+                        
+                        # Отвечаем Mini App, что всё ок
+                        self.wfile.write(json.dumps({"status": "success"}).encode())
+    
+                        # Это требует отдельной реализации
+                        print(f"✅ Готов ответ длиной {len(response_text)}")
+                        
+                        # Пока просто пишем в логи
+                        self.wfile.write(json.dumps({
+                            "status": "success",
+                            "message": "Расклад готов, но отправка через Telegram API ещё не реализована"
+                        }).encode())
+                        
+                    else:
+                        print(f"❌ Неизвестный тип расклада: {spread_type}")
+                        self.wfile.write(json.dumps({"error": "Unknown spread type"}).encode())
                 
             except Exception as e:
                 print(f"❌ Ошибка: {e}")
+                import traceback
+                traceback.print_exc()
                 self.wfile.write(json.dumps({"error": str(e)}).encode())
-
+            
 def run_http_server():
     port = int(os.environ.get("PORT", 8080))
     server = HTTPServer(('0.0.0.0', port), WebAppHandler)
