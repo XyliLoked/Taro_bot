@@ -291,49 +291,75 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ========== НОВЫЙ ОБРАБОТЧИК ДЛЯ MINI APP (ПРАВИЛЬНОЕ МЕСТО) ==========
 async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обрабатывает данные, отправленные из Mini App"""
+    print("\n" + "="*50)
+    print("🚨 ПОЛУЧЕН ВЫЗОВ HANDLE_WEB_APP_DATA")
+    print("="*50)
     
-    await update.message.reply_text("✅ Данные получены! Сейчас сделаю расклад...")
-    
+    # Проверяем, что вообще пришло
+    print(f"update: {update}")
+    print(f"effective_message: {update.effective_message}")
     
     web_app_data = update.effective_message.web_app_data
+    print(f"web_app_data: {web_app_data}")
+    
     if not web_app_data:
+        print("❌ Нет web_app_data")
         return
     
     try:
+        # Логируем сырые данные
+        print(f"📦 Сырые данные: {web_app_data.data}")
+        
+        # Парсим JSON
         data = json.loads(web_app_data.data)
         user = update.effective_user
-        
-        print(f"📲 Mini App данные от {user.id}: {data}")
+        print(f"👤 Пользователь: {user.id} (@{user.username})")
+        print(f"📊 Распарсенные данные: {data}")
         
         if data.get('action') == 'spread':
             spread_type = data.get('type')
             question = data.get('question', 'Общий вопрос')
             
+            print(f"🎯 Тип расклада: {spread_type}")
+            print(f"❓ Вопрос: {question}")
+            
+            # Проверяем наличие метода
             spread_map = {
                 'three_cards': spreader.three_card_spread,
                 'relationship': spreader.relationship_spread,
                 'career': spreader.career_spread,
                 'celtic_cross': spreader.celtic_cross_spread,
                 'daily': spreader.daily_spread,
-                'five_cards': spreader.three_card_spread  # временно используем three_card_spread
+                'five_cards': spreader.three_card_spread
             }
+            print(f"📋 Доступные методы: {list(spread_map.keys())}")
             
             spread_method = spread_map.get(spread_type)
             if not spread_method:
+                print(f"❌ Неизвестный тип расклада: {spread_type}")
                 await update.message.reply_text("❌ Неизвестный тип расклада")
                 return
-
-            await update.message.reply_text("🔮 Получаю расклад из Mini App...")
+            
+            # Отправляем подтверждение
+            print("📤 Отправляю подтверждение пользователю...")
+            await update.message.reply_text("✅ Данные получены! Сейчас сделаю расклад...")
+            print("✅ Подтверждение отправлено")
+            
             print("🔮 Вызываю spread_method...")
-
+            print(f"🕐 Время: {datetime.now()}")
+            
             try:
                 result = await spread_method(question)
-                print(f"✅ spread_method выполнен, длина ответа: {len(result.get('interpretation', ''))}")
+                print(f"✅ spread_method выполнен")
+                print(f"📏 Длина ответа: {len(result.get('interpretation', ''))}")
+                print(f"📝 Первые 100 символов ответа: {result.get('interpretation', '')[:100]}")
             except Exception as e:
                 print(f"❌ Ошибка в spread_method: {e}")
+                import traceback
+                traceback.print_exc()
                 await update.message.reply_text(f"❌ Ошибка при получении расклада: {e}")
                 return
-
+            
             print("💾 Сохраняю в базу данных...")
             try:
                 db.save_reading(
@@ -348,22 +374,33 @@ async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE
                 print("✅ Данные сохранены в БД")
             except Exception as e:
                 print(f"❌ Ошибка сохранения в БД: {e}")
-
+            
+            # Формируем ответ
             response = f"🔮 *{result['name']}*\n\n"
             response += f"📝 *Вопрос:* {question}\n\n"
             response += result['interpretation']
-
+            print(f"📏 Длина ответа для отправки: {len(response)}")
+            
             print("📤 Отправляю ответ пользователю...")
             await update.message.reply_text(
                 response, 
                 parse_mode='Markdown',
                 reply_markup=main_keyboard
             )
-            print("✅ Ответ отправлен")
+            print("✅ Ответ отправлен пользователю")
             
+        else:
+            print(f"❌ Неизвестное действие: {data.get('action')}")
+            
+    except json.JSONDecodeError as e:
+        print(f"❌ Ошибка парсинга JSON: {e}")
+        print(f"📦 Проблемные данные: {web_app_data.data}")
     except Exception as e:
-        print(f"❌ Ошибка обработки Mini App: {e}")
-        await update.message.reply_text(f"❌ Ошибка: {str(e)}")
+        print(f"❌ Общая ошибка: {e}")
+        import traceback
+        traceback.print_exc()
+    
+    print("="*50 + "\n")
 
 def main():
     """Запуск бота"""
