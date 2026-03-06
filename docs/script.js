@@ -98,10 +98,7 @@ function showLoading() {
             text-align: center;
             padding: 20px;
             min-height: 60vh;
-            display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
             position: relative;
             overflow: hidden;
         }
@@ -195,14 +192,13 @@ function showLoading() {
         }
         
         .loading-title {
-            text-align: center;
-            font-size: 2rem;
+            text-align: center; /* Текст по центру */
+            font-size: 2.2rem;
             color: white;
             text-shadow: 0 0 20px #8a6bff;
-            margin: 30px auto 20px;  /* auto по бокам для центрирования */
+            margin: 30px 0 20px; /* Оставляем отступы как были */
             animation: titleFlicker 2s infinite;
-            width: 100%;              /* занимает всю ширину */
-            display: block;           /* блочный элемент */
+            width: 100%; /* Чтобы занимал всю ширину */
         }
         
         @keyframes titleFlicker {
@@ -335,37 +331,51 @@ function showResult(data) {
 // Функция для отображения результата в Mini App
 function displayResult(data) {
     const content = document.getElementById('content');
-    
-    // Парсим ответ от сервера (если нужно)
+    if (!content) {
+        console.error("Элемент #content не найден!");
+        return;
+    }
+
     let resultHtml = '';
-    
-    if (data.interpretation) {
+
+    // Проверяем, что данные пришли и интерпретация существует
+    if (data && data.status === 'success' && data.interpretation) {
+        // Заменяем переносы строк на HTML-теги <br>
+        // И удаляем Markdown-звёздочки, так как мы в HTML
+        const cleanText = data.interpretation
+            .replace(/\*\*/g, '<strong>') // Жирный текст ** -> <strong>
+            .replace(/\*/g, '') // Убираем одиночные *
+            .replace(/\n/g, '<br>'); // Переносы строк
+
         resultHtml = `
             <div class="result-container">
-                <h2 class="result-title">🔮 Ваш расклад</h2>
+                <h2 class="result-title">🔮 ВАШ РАСКЛАД 🔮</h2>
                 <div class="interpretation">
-                    ${data.interpretation.replace(/\n/g, '<br>')}
+                    ${cleanText}
                 </div>
-                <button class="magic-button" onclick="window.location.reload()" style="margin-top: 20px;">
-                    <span class="button-text">Новый расклад</span>
+                <button class="magic-button" onclick="window.location.reload()" style="margin-top: 30px;">
+                    <span class="button-text">НОВЫЙ РАСКЛАД</span>
                 </button>
             </div>
         `;
     } else {
+        // Если данных нет или ошибка
+        const errorMsg = data?.error || 'Неизвестная ошибка';
         resultHtml = `
             <div class="result-container">
-                <h2 class="result-title">❌ Ошибка</h2>
+                <h2 class="result-title">❌ ОШИБКА</h2>
                 <div class="error-message">
-                    ${data.error || 'Неизвестная ошибка'}
+                    ${errorMsg}
                 </div>
-                <button class="magic-button" onclick="window.location.reload()" style="margin-top: 20px;">
-                    <span class="button-text">Попробовать снова</span>
+                <button class="magic-button" onclick="window.location.reload()" style="margin-top: 30px;">
+                    <span class="button-text">ПОПРОБОВАТЬ СНОВА</span>
                 </button>
             </div>
         `;
     }
-    
+
     content.innerHTML = resultHtml;
+    console.log("Результат отображён в Mini App");
 }
 
 // Слушаем события от Telegram
