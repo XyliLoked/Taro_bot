@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Мистическое Таро</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Telegram WebApp SDK загружается раньше, чтобы быть точно готовым -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
     <div class="container">
@@ -51,8 +53,7 @@
         <div class="moon-phase"></div>
     </div>
     
-    <!-- ⚠️ ВАЖНО: СНАЧАЛА Telegram SDK, ПОТОМ твой скрипт -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Твой скрипт загружается после того, как весь DOM готов -->
     <script src="script.js"></script>
 </body>
 </html>
