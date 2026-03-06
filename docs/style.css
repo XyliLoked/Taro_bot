@@ -219,3 +219,50 @@ body::before {
         font-size: 0.8rem;
     }
 }
+
+.result-container {
+    padding: 20px;
+    color: white;
+    animation: fadeIn 0.5s ease;
+}
+
+.result-title {
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: 30px;
+    text-shadow: 0 0 15px #8a6bff;
+    animation: titleGlow 3s infinite alternate;
+}
+
+.interpretation {
+    background: rgba(106, 90, 205, 0.2);
+    border-radius: 15px;
+    padding: 25px;
+    margin: 20px 0;
+    border-left: 4px solid #8a6bff;
+    line-height: 1.6;
+    font-size: 1.1rem;
+    box-shadow: 0 0 30px rgba(138, 43, 226, 0.3);
+}
+
+.interpretation p {
+    margin: 15px 0;
+}
+
+.interpretation strong {
+    color: #b8a0ff;
+    text-shadow: 0 0 8px currentColor;
+}
+
+.error-message {
+    background: rgba(255, 0, 0, 0.1);
+    border-left: 4px solid #ff4444;
+    padding: 20px;
+    border-radius: 10px;
+    color: #ff8888;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}

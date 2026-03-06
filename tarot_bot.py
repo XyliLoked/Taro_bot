@@ -556,9 +556,18 @@ class WebAppHandler(BaseHTTPRequestHandler):
                         response_text += result['interpretation']
                         print(f"✅ Готов ответ длиной {len(response_text)}")
                         
-                        # Отправляем ответ через Telegram API
-                        loop.run_until_complete(send_web_app_answer(query_id, response_text))
-                        
+                        # Вместо отправки через Telegram API, просто возвращаем результат
+                        response_data = {
+                            "status": "success",
+                            "interpretation": response_text,
+                            "spread_name": result['name'],
+                            "question": question
+                        }
+
+                        # Отправляем JSON обратно в Mini App
+                        self.wfile.write(json.dumps(response_data).encode())
+                        print(f"✅ Данные отправлены обратно в Mini App")
+
                         self.wfile.write(json.dumps({"status": "success"}).encode())
                         
                     else:

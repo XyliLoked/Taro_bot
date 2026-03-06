@@ -40,7 +40,7 @@ function startReading(spreadType) {
     .then(response => response.json())
     .then(data => {
         console.log('Ответ от сервера:', data);
-        window.Telegram.WebApp.close(); // Закрываем Mini App после отправки
+        displayResult(data);  // ← показываем результат в Mini App
     })
     .catch(error => {
         console.error('Ошибка:', error);
@@ -327,6 +327,42 @@ function showResult(data) {
             </button>
         </div>
     `;
+}
+
+// Функция для отображения результата в Mini App
+function displayResult(data) {
+    const content = document.getElementById('content');
+    
+    // Парсим ответ от сервера (если нужно)
+    let resultHtml = '';
+    
+    if (data.interpretation) {
+        resultHtml = `
+            <div class="result-container">
+                <h2 class="result-title">🔮 Ваш расклад</h2>
+                <div class="interpretation">
+                    ${data.interpretation.replace(/\n/g, '<br>')}
+                </div>
+                <button class="magic-button" onclick="window.location.reload()" style="margin-top: 20px;">
+                    <span class="button-text">Новый расклад</span>
+                </button>
+            </div>
+        `;
+    } else {
+        resultHtml = `
+            <div class="result-container">
+                <h2 class="result-title">❌ Ошибка</h2>
+                <div class="error-message">
+                    ${data.error || 'Неизвестная ошибка'}
+                </div>
+                <button class="magic-button" onclick="window.location.reload()" style="margin-top: 20px;">
+                    <span class="button-text">Попробовать снова</span>
+                </button>
+            </div>
+        `;
+    }
+    
+    content.innerHTML = resultHtml;
 }
 
 // Слушаем события от Telegram
