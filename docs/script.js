@@ -24,23 +24,23 @@ function startReading(spreadType) {
     const initData = window.Telegram.WebApp.initData;
     console.log("initData:", initData);
     
-    // Отправляем данные НЕ через tg.sendData, а через fetch на свой сервер
+    // Отправляем данные на свой сервер
     fetch('https://tarobot-production-99c8.up.railway.app/webapp-data', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            initData: initData, // ← Telegram сам подставит сюда query_id
-            spreadType: spreadType,
-            question: finalQuestion
+            action: 'spread',
+            type: spreadType,
+            question: finalQuestion,
+            initData: window.Telegram.WebApp.initData  // ← это важно для Menu-кнопки
         })
     })
     .then(response => response.json())
     .then(data => {
         console.log('Ответ от сервера:', data);
-        // Сервер сам отправит сообщение в чат через answerWebAppQuery
-        window.Telegram.WebApp.close();
+        window.Telegram.WebApp.close(); // Закрываем Mini App после отправки
     })
     .catch(error => {
         console.error('Ошибка:', error);
