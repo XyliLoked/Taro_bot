@@ -328,7 +328,7 @@ function showResult(data) {
     `;
 }
 
-// Функция для отображения результата в виде карт
+// Функция для отображения результата в виде магических карт с каруселью
 function displayResult(data) {
     const content = document.getElementById('content');
     if (!content) {
@@ -341,7 +341,6 @@ function displayResult(data) {
         return;
     }
 
-    // Разбираем текст на секции по заголовкам
     const text = data.interpretation;
     
     // Регулярные выражения для поиска секций
@@ -354,57 +353,224 @@ function displayResult(data) {
     ];
 
     let cardsHtml = '';
+    let cardIndex = 0;
     
     sections.forEach(section => {
         const match = text.match(section.pattern);
         if (match && match[1].trim()) {
-            // Очищаем текст от лишних символов и форматируем
             let sectionText = match[1].trim()
                 .replace(/\*\*/g, '<strong>')
                 .replace(/\*/g, '')
                 .replace(/\n/g, '<br>');
             
+            // Добавляем анимацию с задержкой для каждой карты
+            const animationDelay = cardIndex * 0.1;
             cardsHtml += `
-                <div class="tarot-card">
-                    <div class="card-header">
-                        <span class="card-emoji">${section.emoji}</span>
-                        <h3 class="card-title">${section.title}</h3>
-                    </div>
-                    <div class="card-content">
-                        ${sectionText}
+                <div class="magic-card" style="animation-delay: ${animationDelay}s;" data-index="${cardIndex}">
+                    <div class="card-inner">
+                        <div class="card-glow"></div>
+                        <div class="card-header">
+                            <span class="card-emoji">${section.emoji}</span>
+                            <h3 class="card-title">${section.title}</h3>
+                        </div>
+                        <div class="card-content">
+                            ${sectionText}
+                        </div>
+                        <div class="card-runes">ᛉ ᛟ ᚨ ᚷ ᚱ</div>
                     </div>
                 </div>
             `;
+            cardIndex++;
         }
     });
 
-    // Если не нашли ни одной секции, показываем весь текст как есть
-    if (!cardsHtml) {
-        cardsHtml = `
-            <div class="tarot-card">
-                <div class="card-content">
-                    ${data.interpretation.replace(/\n/g, '<br>')}
-                </div>
-            </div>
-        `;
+    // Создаём индикаторы позиций
+    let positionIndicators = '';
+    for (let i = 0; i < cardIndex; i++) {
+        positionIndicators += `<div class="position-dot ${i === 0 ? 'active' : ''}" data-pos="${i}"></div>`;
     }
 
-    // ⭐ ВОТ ЗДЕСЬ ВСТАВЛЯЕМ РЕЗУЛЬТАТ НА СТРАНИЦУ
     content.innerHTML = `
         <div class="result-container">
-            <h2 class="result-title">🔮 ВАШ РАСКЛАД 🔮</h2>
-            <div class="cards-deck">
+            <h2 class="result-title mystical-title">🔮 ВАШ МИСТИЧЕСКИЙ РАСКЛАД 🔮</h2>
+            <div class="cards-deck mystical-deck">
                 ${cardsHtml}
             </div>
-            <button class="magic-button" onclick="window.location.reload()" style="margin-top: 30px;">
-                <span class="button-text">НОВЫЙ РАСКЛАД</span>
+            <div class="card-position-indicator">
+                ${positionIndicators}
+            </div>
+            <button class="magic-button" onclick="window.location.reload()" style="margin-top: 40px;">
+                <span class="button-text">НОВОЕ ГАДАНИЕ</span>
+                <span class="button-glow"></span>
             </button>
         </div>
     `;
 
-    // ⭐ И ПИШЕМ В КОНСОЛЬ
-    console.log("✅ Результат отображён в Mini App");
+    // Активируем карусель
+    initCarousel();
+    console.log("✅ Мистическая карусель создана");
 }
+
+// Функция для отображения результата в виде магических карт с каруселью
+function displayResult(data) {
+    const content = document.getElementById('content');
+    if (!content) {
+        console.error("Элемент #content не найден!");
+        return;
+    }
+
+    if (!data || data.status !== 'success' || !data.interpretation) {
+        showError(data?.error || 'Неизвестная ошибка');
+        return;
+    }
+
+    const text = data.interpretation;
+    
+    // Регулярные выражения для поиска секций
+    const sections = [
+        { emoji: '🔮', title: 'ОБЩАЯ АТМОСФЕРА', pattern: /🔮?\s*ОБЩАЯ\s*АТМОСФЕРА:?\s*([\s\S]*?)(?=📍|💡|🌟|✨|$)/i },
+        { emoji: '📍', title: 'РАЗБОР ПОЗИЦИЙ', pattern: /📍?\s*РАЗБОР\s*КАЖДОЙ\s*ПОЗИЦИИ:?\s*([\s\S]*?)(?=💡|🌟|✨|$)/i },
+        { emoji: '💡', title: 'ГЛАВНОЕ ПОСЛАНИЕ', pattern: /💡?\s*ГЛАВНОЕ\s*ПОСЛАНИЕ:?\s*([\s\S]*?)(?=🌟|✨|$)/i },
+        { emoji: '🌟', title: 'ПРАКТИЧЕСКИЙ СОВЕТ', pattern: /🌟?\s*ПРАКТИЧЕСКИЙ\s*СОВЕТ:?\s*([\s\S]*?)(?=✨|$)/i },
+        { emoji: '✨', title: 'ПОЖЕЛАНИЕ', pattern: /✨?\s*ПОЖЕЛАНИЕ:?\s*([\s\S]*?)$/i }
+    ];
+
+    let cardsHtml = '';
+    let cardIndex = 0;
+    
+    sections.forEach(section => {
+        const match = text.match(section.pattern);
+        if (match && match[1].trim()) {
+            let sectionText = match[1].trim()
+                .replace(/\*\*/g, '<strong>')
+                .replace(/\*/g, '')
+                .replace(/\n/g, '<br>');
+            
+            // Добавляем анимацию с задержкой для каждой карты
+            const animationDelay = cardIndex * 0.1;
+            cardsHtml += `
+                <div class="magic-card" style="animation-delay: ${animationDelay}s;" data-index="${cardIndex}">
+                    <div class="card-inner">
+                        <div class="card-glow"></div>
+                        <div class="card-header">
+                            <span class="card-emoji">${section.emoji}</span>
+                            <h3 class="card-title">${section.title}</h3>
+                        </div>
+                        <div class="card-content">
+                            ${sectionText}
+                        </div>
+                        <div class="card-runes">ᛉ ᛟ ᚨ ᚷ ᚱ</div>
+                    </div>
+                </div>
+            `;
+            cardIndex++;
+        }
+    });
+
+    // Создаём индикаторы позиций
+    let positionIndicators = '';
+    for (let i = 0; i < cardIndex; i++) {
+        positionIndicators += `<div class="position-dot ${i === 0 ? 'active' : ''}" data-pos="${i}"></div>`;
+    }
+
+    content.innerHTML = `
+        <div class="result-container">
+            <h2 class="result-title mystical-title">🔮 ВАШ МИСТИЧЕСКИЙ РАСКЛАД 🔮</h2>
+            <div class="cards-deck mystical-deck">
+                ${cardsHtml}
+            </div>
+            <div class="card-position-indicator">
+                ${positionIndicators}
+            </div>
+            <button class="magic-button" onclick="window.location.reload()" style="margin-top: 40px;">
+                <span class="button-text">НОВОЕ ГАДАНИЕ</span>
+                <span class="button-glow"></span>
+            </button>
+        </div>
+    `;
+
+    // Активируем карусель
+    initCarousel();
+    console.log("✅ Мистическая карусель создана");
+}
+
+function showError(message) {
+    const content = document.getElementById('content');
+    if (!content) return;
+    
+    content.innerHTML = `
+        <div class="result-container">
+            <h2 class="result-title mystical-title">❌ ОШИБКА</h2>
+            <div class="tarot-card error-card">
+                <div class="card-inner">
+                    <div class="card-content">
+                        ${message}
+                    </div>
+                </div>
+            </div>
+            <button class="magic-button" onclick="window.location.reload()" style="margin-top: 30px;">
+                <span class="button-text">ПОПРОБОВАТЬ СНОВА</span>
+            </button>
+        </div>
+    `;
+}
+
+// Добавляем поддержку свайпов для карт
+function initSwipeNavigation() {
+    const deck = document.querySelector('.cards-deck');
+    if (!deck) return;
+    
+    let startX;
+    let scrollLeft;
+    let isDown = false;
+    
+    deck.addEventListener('mousedown', (e) => {
+        isDown = true;
+        deck.classList.add('grabbing');
+        startX = e.pageX - deck.offsetLeft;
+        scrollLeft = deck.scrollLeft;
+    });
+    
+    deck.addEventListener('mouseleave', () => {
+        isDown = false;
+        deck.classList.remove('grabbing');
+    });
+    
+    deck.addEventListener('mouseup', () => {
+        isDown = false;
+        deck.classList.remove('grabbing');
+    });
+    
+    deck.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - deck.offsetLeft;
+        const walk = (x - startX) * 2;
+        deck.scrollLeft = scrollLeft - walk;
+    });
+    
+    // Для мобильных
+    deck.addEventListener('touchstart', (e) => {
+        isDown = true;
+        startX = e.touches[0].pageX - deck.offsetLeft;
+        scrollLeft = deck.scrollLeft;
+    });
+    
+    deck.addEventListener('touchend', () => {
+        isDown = false;
+    });
+    
+    deck.addEventListener('touchmove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.touches[0].pageX - deck.offsetLeft;
+        const walk = (x - startX) * 2;
+        deck.scrollLeft = scrollLeft - walk;
+    });
+}
+
+// Вызываем после отображения карт
+setTimeout(initSwipeNavigation, 500); // Ждём появления карт
 
 function showError(message) {
     const content = document.getElementById('content');
