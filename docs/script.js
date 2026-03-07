@@ -299,12 +299,15 @@ function showLoading() {
 
 // Функция для отображения результата в виде магических карт с каруселью
 function displayResult(data) {
-    console.log("🔥 displayResult вызвана! Данные:", data);
+    console.log("🚨 ФУНКЦИЯ ВЫЗВАНА! Данные:", data);
+    alert("Функция вызвана! Смотри консоль (F12)");
     const content = document.getElementById('content');
     if (!content) {
-        console.error("Элемент content не найден!");
+        alert("Ошибка: элемент content не найден!");
         return;
     }
+    alert("Элемент content найден, пробую отобразить...");
+    content.innerHTML = "<h1 style='color:white;'>Данные получены!</h1><pre style='color:white;'>" + JSON.stringify(data, null, 2) + "</pre>";
 
     // ПРОСТЕЙШАЯ ПРОВЕРКА: показываем данные как есть
     let html = '<div style="padding:20px; color:white; text-align:center;">';
