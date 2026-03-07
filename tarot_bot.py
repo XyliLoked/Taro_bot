@@ -476,6 +476,7 @@ async def five_card_spread(self, question: str) -> Dict[str, Any]:
         "Итог"
     ]
     
+    # Создаем список кортежей (имя, позиция)
     cards_with_positions = [(card["name"], card["position"]) for card in cards_dicts]
     
     interpretation = await self.generate_reading(
