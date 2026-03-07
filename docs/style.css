@@ -21,7 +21,7 @@ body::before {
     position: absolute;
     width: 100%;
     height: 100%;
-    background-image: 
+    background-image:
         radial-gradient(2px 2px at 10px 20px, #ffffff, rgba(0,0,0,0)),
         radial-gradient(2px 2px at 30px 50px, #ffe6b0, rgba(0,0,0,0)),
         radial-gradient(3px 3px at 70px 90px, #c0b0ff, rgba(0,0,0,0)),
@@ -29,6 +29,15 @@ body::before {
     background-repeat: repeat;
     opacity: 0.3;
     pointer-events: none;
+}
+
+/* Контейнеры и вопрос */
+.container {
+    max-width: 600px;
+    width: 100%;
+    padding: 40px 20px;
+    position: relative;
+    z-index: 1;
 }
 
 .question-container {
@@ -70,14 +79,6 @@ body::before {
     font-style: italic;
 }
 
-.container {
-    max-width: 600px;
-    width: 100%;
-    padding: 40px 20px;
-    position: relative;
-    z-index: 1;
-}
-
 /* Главный заголовок */
 .main-title {
     text-align: center;
@@ -85,78 +86,54 @@ body::before {
     font-weight: 800;
     letter-spacing: 4px;
     margin-bottom: 50px;
-    text-shadow: 
-        0 0 10px rgba(138, 43, 226, 0.7),
-        0 0 20px rgba(75, 0, 130, 0.5),
-        0 0 30px rgba(106, 90, 205, 0.3);
+    text-shadow: 0 0 10px rgba(138, 43, 226, 0.7), 0 0 20px rgba(75, 0, 130, 0.5), 0 0 30px rgba(106, 90, 205, 0.3);
     color: #ffffff;
     animation: titleGlow 3s infinite alternate;
-    word-break: break-word;
-    line-height: 1.3;
 }
 
 @keyframes titleGlow {
-    0% {
-        text-shadow: 
-            0 0 10px rgba(138, 43, 226, 0.5),
-            0 0 20px rgba(75, 0, 130, 0.3);
-    }
-    100% {
-        text-shadow: 
-            0 0 20px rgba(170, 100, 255, 0.9),
-            0 0 30px rgba(120, 20, 200, 0.7),
-            0 0 40px rgba(80, 0, 150, 0.5);
-    }
+    0% { text-shadow: 0 0 10px rgba(138, 43, 226, 0.5), 0 0 20px rgba(75, 0, 130, 0.3); }
+    100% { text-shadow: 0 0 20px rgba(170, 100, 255, 0.9), 0 0 30px rgba(120, 20, 200, 0.7), 0 0 40px rgba(80, 0, 150, 0.5); }
 }
 
-/* Сетка для кнопок */
+/* Сетка кнопок */
 .menu-grid {
     display: flex;
     flex-direction: column;
-    gap: 20px;  /* Отступы между кнопками */
+    gap: 20px;
     align-items: stretch;
 }
 
-/* Переливающиеся кнопки */
+/* Стили кнопок */
 .magic-button {
     position: relative;
     padding: 20px 25px;
     border: none;
     border-radius: 15px;
-    background: linear-gradient(
-        45deg,
-        #2a1b3d,
-        #4a2b5e,
-        #6b3f7c,
-        #4a2b5e,
-        #2a1b3d
-    );
+    background: linear-gradient(45deg, #2a1b3d, #4a2b5e, #6b3f7c, #4a2b5e, #2a1b3d);
     background-size: 400% 400%;
     color: white;
     font-weight: bold;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 
-        0 0 15px rgba(106, 90, 205, 0.5),
-        inset 0 0 20px rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 15px rgba(106, 90, 205, 0.5), inset 0 0 20px rgba(255, 255, 255, 0.1);
     animation: gradientMove 6s ease infinite;
     text-align: left;
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+@keyframes gradientMove {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
 .magic-button:hover {
     transform: translateY(-3px) scale(1.02);
-    box-shadow: 
-        0 0 30px rgba(138, 43, 226, 0.8),
-        inset 0 0 30px rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 30px rgba(138, 43, 226, 0.8), inset 0 0 30px rgba(255, 255, 255, 0.2);
     border: 1px solid rgba(255, 215, 0, 0.3);
 }
 
-.magic-button:active {
-    transform: translateY(0) scale(0.98);
-}
-
-/* Текст на кнопках */
 .button-text {
     display: block;
     font-size: 1.4rem;
@@ -172,12 +149,10 @@ body::before {
     font-size: 0.9rem;
     opacity: 0.9;
     font-weight: 400;
-    letter-spacing: 1px;
     color: rgba(255, 255, 255, 0.8);
-    text-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
 }
 
-/* Декоративный элемент - фаза луны */
+/* Луна */
 .moon-phase {
     width: 100px;
     height: 100px;
@@ -194,66 +169,11 @@ body::before {
     to { opacity: 0.3; box-shadow: 0 0 70px #b8a0ff; }
 }
 
-/* Адаптация для мобильных */
-@media (max-width: 480px) {
-    .main-title {
-        font-size: 1.4rem;
-        letter-spacing: 2px;
-    }
-    
-    .magic-button {
-        padding: 15px 20px;
-    }
-    
-    .button-text {
-        font-size: 1.2rem;
-    }
-    
-    .button-subtext {
-        font-size: 0.8rem;
-    }
-}
-
+/* ===== СТИЛИ ДЛЯ РЕЗУЛЬТАТОВ ===== */
 .result-container {
     padding: 20px;
     color: white;
     animation: fadeIn 0.5s ease;
-}
-
-.result-title {
-    text-align: center;
-    font-size: 2rem;
-    margin-bottom: 30px;
-    text-shadow: 0 0 15px #8a6bff;
-    animation: titleGlow 3s infinite alternate;
-}
-
-.interpretation {
-    background: rgba(106, 90, 205, 0.2);
-    border-radius: 15px;
-    padding: 25px;
-    margin: 20px 0;
-    border-left: 4px solid #8a6bff;
-    line-height: 1.6;
-    font-size: 1.1rem;
-    box-shadow: 0 0 30px rgba(138, 43, 226, 0.3);
-}
-
-.interpretation p {
-    margin: 15px 0;
-}
-
-.interpretation strong {
-    color: #b8a0ff;
-    text-shadow: 0 0 8px currentColor;
-}
-
-.error-message {
-    background: rgba(255, 0, 0, 0.1);
-    border-left: 4px solid #ff4444;
-    padding: 20px;
-    border-radius: 10px;
-    color: #ff8888;
 }
 
 @keyframes fadeIn {
@@ -261,106 +181,22 @@ body::before {
     to { opacity: 1; transform: translateY(0); }
 }
 
-.tarot-card {
-    background: linear-gradient(145deg, #1a1a2e, #16213e);
-    border: 2px solid #4a2b5e;
-    border-radius: 20px;
-    padding: 0;
-    box-shadow: 0 10px 30px rgba(138, 43, 226, 0.3),
-                inset 0 0 20px rgba(255, 255, 255, 0.05);
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.tarot-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 40px rgba(138, 43, 226, 0.5),
-                inset 0 0 30px rgba(255, 215, 0, 0.1);
-}
-
-.tarot-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, #8a6bff, #b8a0ff, #9370db);
-}
-
-.card-header {
-    background: rgba(74, 43, 94, 0.5);
-    padding: 15px 20px;
-    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    backdrop-filter: blur(5px);
-}
-
-.card-emoji {
-    font-size: 1.8rem;
-    filter: drop-shadow(0 0 5px #8a6bff);
-}
-
-.card-title {
-    margin: 0;
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: #d4b0ff;
+.mystical-title {
+    font-family: 'Georgia', serif;
     text-transform: uppercase;
-    letter-spacing: 2px;
-    text-shadow: 0 0 10px rgba(138, 43, 226, 0.5);
+    letter-spacing: 8px;
+    font-size: 1.8rem;
+    background: linear-gradient(45deg, #d4af37, #b89b7b, #8b7355);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    text-shadow: 0 0 30px rgba(184, 155, 123, 0.5);
+    margin-bottom: 30px;
+    text-align: center;
 }
 
-.card-content {
-    padding: 20px;
-    color: rgba(255, 255, 255, 0.9);
-    line-height: 1.6;
-    font-size: 1rem;
-}
-
-.card-content p {
-    margin: 10px 0;
-}
-
-.card-content strong {
-    color: #b8a0ff;
-    font-weight: 600;
-}
-
-/* Стиль для карты ошибки */
-.error-card {
-    border-color: #ff4444;
-    background: linear-gradient(145deg, #2a1a1a, #3e2121);
-}
-
-.error-card::before {
-    background: linear-gradient(90deg, #ff4444, #ff8888);
-}
-
-/* Адаптация для мобильных */
-@media (max-width: 480px) {
-    .card-header {
-        padding: 12px 15px;
-    }
-    
-    .card-emoji {
-        font-size: 1.5rem;
-    }
-    
-    .card-title {
-        font-size: 1rem;
-    }
-    
-    .card-content {
-        padding: 15px;
-        font-size: 0.95rem;
-    }
-}
-
-/* Горизонтальная прокрутка карт */
+/* Карусель */
 .cards-deck {
     display: flex;
     flex-direction: row;
@@ -372,6 +208,7 @@ body::before {
     scrollbar-width: thin;
     scrollbar-color: #b89b7b #2a1f3a;
     cursor: grab;
+    scroll-behavior: smooth;
 }
 
 .cards-deck.grabbing {
@@ -379,7 +216,6 @@ body::before {
     scroll-snap-type: none;
 }
 
-/* Стилизация скроллбара */
 .cards-deck::-webkit-scrollbar {
     height: 6px;
 }
@@ -395,27 +231,84 @@ body::before {
     box-shadow: 0 0 10px rgba(184, 155, 123, 0.5);
 }
 
-.cards-deck::-webkit-scrollbar-thumb:hover {
-    background: #d4af37;
-}
-
-/* Карты в горизонтальном формате */
+/* Карты */
 .magic-card {
-    flex: 0 0 300px; /* Ширина карты */
+    flex: 0 0 300px;
     margin: 10px 0;
     scroll-snap-align: center;
     transition: transform 0.3s ease;
 }
 
-.magic-card:first-child {
-    margin-left: auto;
+.card-inner {
+    background: linear-gradient(145deg, #1e1a2e, #2a1f3a);
+    border: 3px solid #b89b7b;
+    border-radius: 25px;
+    padding: 25px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 0 2px #8b7355 inset, 0 0 30px rgba(184,155,123,0.3);
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(5px);
+    transition: all 0.4s ease;
 }
 
-.magic-card:last-child {
-    margin-right: auto;
+.card-glow {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(125deg, rgba(184,155,123,0.1) 0%, rgba(212,175,55,0.2) 25%, rgba(139,115,85,0.1) 50%, rgba(212,175,55,0.2) 75%, rgba(184,155,123,0.1) 100%);
+    background-size: 200% 200%;
+    animation: gradientMove 8s ease infinite;
+    pointer-events: none;
+    mix-blend-mode: overlay;
 }
 
-/* Индикатор позиции */
+.card-header {
+    background: rgba(74, 43, 94, 0.5);
+    padding: 15px 20px;
+    border-bottom: 1px solid rgba(255,215,0,0.2);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    backdrop-filter: blur(5px);
+    position: relative;
+    z-index: 2;
+}
+
+.card-emoji {
+    font-size: 1.8rem;
+    filter: drop-shadow(0 0 5px #8a6bff);
+}
+
+.card-title {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #d4b0ff;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px rgba(138,43,226,0.5);
+}
+
+.card-content {
+    padding: 20px;
+    color: rgba(255,255,255,0.9);
+    line-height: 1.6;
+    font-size: 1rem;
+    position: relative;
+    z-index: 2;
+}
+
+.card-runes {
+    position: absolute;
+    bottom: 10px;
+    right: 20px;
+    font-size: 1.2rem;
+    color: #b89b7b;
+    opacity: 0.3;
+    transform: rotate(-5deg);
+    z-index: 1;
+}
+
+/* Индикаторы */
 .card-position-indicator {
     display: flex;
     justify-content: center;
@@ -439,293 +332,16 @@ body::before {
     box-shadow: 0 0 15px #b89b7b;
 }
 
-/* Горизонтальная карусель */
-.cards-deck {
-    display: flex;
-    flex-direction: row;
-    overflow-x: auto;
-    gap: 20px;
-    padding: 20px 15px;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-    scrollbar-color: #b89b7b #2a1f3a;
-    cursor: grab;
-    scroll-behavior: smooth;
-}
-
-.cards-deck.grabbing {
-    cursor: grabbing;
-    scroll-snap-type: none;
-}
-
-/* Стилизация скроллбара */
-.cards-deck::-webkit-scrollbar {
-    height: 6px;
-}
-
-.cards-deck::-webkit-scrollbar-track {
-    background: #2a1f3a;
-    border-radius: 10px;
-}
-
-.cards-deck::-webkit-scrollbar-thumb {
-    background: #b89b7b;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(184, 155, 123, 0.5);
-}
-
-.cards-deck::-webkit-scrollbar-thumb:hover {
-    background: #d4af37;
-}
-
-/* Карты в карусели */
-.magic-card {
-    flex: 0 0 300px;
-    margin: 10px 0;
-    scroll-snap-align: center;
-    transition: transform 0.3s ease;
-    animation: cardAppear 0.6s ease-out forwards;
-    opacity: 0;
-}
-
-@keyframes cardAppear {
-    0% {
-        opacity: 0;
-        transform: translateY(50px) scale(0.9);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-
-/* Анимация для чётных карт */
-.magic-card:nth-child(even) {
-    animation-name: cardAppearRight;
-}
-
-@keyframes cardAppearRight {
-    0% {
-        opacity: 0;
-        transform: translateX(50px) rotate(2deg);
-    }
-    100% {
-        opacity: 1;
-        transform: translateX(0) rotate(0);
-    }
-}
-
-/* Индикатор позиции */
-.card-position-indicator {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    margin: 20px 0;
-    padding: 10px;
-}
-
-.position-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: rgba(184, 155, 123, 0.3);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    cursor: pointer;
-    box-shadow: 0 0 10px rgba(184, 155, 123, 0.2);
-}
-
-.position-dot.active {
-    width: 30px;
-    border-radius: 15px;
-    background: #b89b7b;
-    box-shadow: 0 0 20px #b89b7b, 0 0 40px #d4af37;
-}
-
-.position-dot:hover {
-    background: #d4af37;
-    transform: scale(1.2);
-}
-
-/* Остальные стили карт (из предыдущего ответа) */
-.card-inner {
-    background: linear-gradient(145deg, #1e1a2e, #2a1f3a);
-    border: 3px solid #b89b7b;
-    border-radius: 25px;
-    padding: 25px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 0 2px #8b7355 inset, 0 0 30px rgba(184, 155, 123, 0.3);
-    position: relative;
-    overflow: hidden;
-}
-
-.card-glow {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(125deg, 
-        rgba(184, 155, 123, 0.1) 0%, 
-        rgba(212, 175, 55, 0.2) 25%,
-        rgba(139, 115, 85, 0.1) 50%,
-        rgba(212, 175, 55, 0.2) 75%,
-        rgba(184, 155, 123, 0.1) 100%);
-    background-size: 200% 200%;
-    animation: gradientMove 8s ease infinite;
-    pointer-events: none;
-    mix-blend-mode: overlay;
-}
-
-@keyframes gradientMove {
-    0% { background-position: 0% 0%; }
-    50% { background-position: 100% 100%; }
-    100% { background-position: 0% 0%; }
-}
-
-@keyframes cardGlow {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-.magic-card:hover .card-inner {
-    transform: translateY(-5px) scale(1.02);
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8), 0 0 0 3px #c9ad8a inset, 0 0 50px rgba(255, 215, 0, 0.4);
-}
-
-.card-runes {
-    position: absolute;
-    bottom: 10px;
-    right: 20px;
-    font-size: 1.2rem;
-    color: #b89b7b;
-    opacity: 0.3;
-    letter-spacing: 5px;
-    transform: rotate(-5deg);
-}
-
-.mystical-title {
-    font-family: 'Georgia', 'Times New Roman', serif;
-    text-transform: uppercase;
-    letter-spacing: 8px;
-    font-size: 1.8rem;
-    background: linear-gradient(45deg, #d4af37, #b89b7b, #8b7355);
-    -webkit-background-clip: text;        /* Для Safari, Chrome, Edge */
-    background-clip: text;                 /* Стандартное свойство */
-    -webkit-text-fill-color: transparent;  /* Для Safari */
-    color: transparent;                    /* Для остальных браузеров */
-    text-shadow: 0 0 30px rgba(184, 155, 123, 0.5);
-    margin-bottom: 30px;
-    position: relative;
-}
-
-.mystical-title::before,
-.mystical-title::after {
-    content: '✦';
-    margin: 0 20px;
-    color: #b89b7b;
-    font-size: 2rem;
-    opacity: 0.6;
-}
-
+/* Адаптация для мобильных */
 @media (max-width: 480px) {
-    .mystical-title {
-        font-size: 1.2rem;
-        letter-spacing: 4px;
-    }
-    
-    .magic-card {
-        flex: 0 0 260px;
-    }
-    
-    .card-inner {
-        padding: 15px;
-    }
-    
-    .card-runes {
-        font-size: 0.8rem;
-    }
-}
-
-/* ===== НЕДОСТАЮЩИЕ СТИЛИ ДЛЯ КАРТ И ЗАГОЛОВКА ===== */
-.card-glow {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(125deg,
-        rgba(184, 155, 123, 0.1) 0%,
-        rgba(212, 175, 55, 0.2) 25%,
-        rgba(139, 115, 85, 0.1) 50%,
-        rgba(212, 175, 55, 0.2) 75%,
-        rgba(184, 155, 123, 0.1) 100%);
-    background-size: 200% 200%;
-    animation: gradientMove 8s ease infinite;
-    pointer-events: none;
-    mix-blend-mode: overlay;
-}
-
-@keyframes gradientMove {
-    0% { background-position: 0% 0%; }
-    50% { background-position: 100% 100%; }
-    100% { background-position: 0% 0%; }
-}
-
-.mystical-title {
-    font-family: 'Georgia', 'Times New Roman', serif;
-    text-transform: uppercase;
-    letter-spacing: 8px;
-    font-size: 1.8rem;
-    background: linear-gradient(45deg, #d4af37, #b89b7b, #8b7355);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: transparent;
-    text-shadow: 0 0 30px rgba(184, 155, 123, 0.5);
-    margin-bottom: 30px;
-    position: relative;
-    text-align: center;
-}
-
-.mystical-title::before,
-.mystical-title::after {
-    content: '✦';
-    margin: 0 20px;
-    color: #b89b7b;
-    font-size: 2rem;
-    opacity: 0.6;
-}
-
-/* Стили для карт в карусели */
-.card-inner {
-    background: linear-gradient(145deg, #1e1a2e, #2a1f3a);
-    border: 3px solid #b89b7b;
-    border-radius: 25px;
-    padding: 25px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6),
-                0 0 0 2px #8b7355 inset,
-                0 0 30px rgba(184, 155, 123, 0.3);
-    position: relative;
-    overflow: hidden;
-    backdrop-filter: blur(5px);
-    transition: all 0.4s ease;
-}
-
-.card-inner::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path d="M10 10 L90 10 L90 90 L10 90 Z" fill="none" stroke="%23b89b7b" stroke-width="0.5" opacity="0.2"/><circle cx="50" cy="50" r="3" fill="%23b89b7b" opacity="0.3"/></svg>');
-    opacity: 0.2;
-    pointer-events: none;
-}
-
-.magic-card:hover .card-inner {
-    transform: translateY(-10px) scale(1.02);
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8),
-                0 0 0 3px #c9ad8a inset,
-                0 0 50px rgba(255, 215, 0, 0.4);
+    .main-title { font-size: 1.4rem; }
+    .magic-button { padding: 15px 20px; }
+    .button-text { font-size: 1.2rem; }
+    .button-subtext { font-size: 0.8rem; }
+    .mystical-title { font-size: 1.2rem; letter-spacing: 4px; }
+    .magic-card { flex: 0 0 260px; }
+    .card-header { padding: 12px 15px; }
+    .card-emoji { font-size: 1.5rem; }
+    .card-title { font-size: 1rem; }
+    .card-content { padding: 15px; font-size: 0.95rem; }
 }
