@@ -10,6 +10,7 @@ from telegram.request import HTTPXRequest
 from spreads import TarotSpread
 from database import db
 from config import config
+from typing import List, Dict, Any, Optional, Tuple
 
 # Создаём отдельный экземпляр бота для отправки ответов
 load_dotenv()
@@ -359,7 +360,7 @@ async def handle_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE
                 'career': spreader.career_spread,
                 'celtic_cross': spreader.celtic_cross_spread,
                 'daily': spreader.daily_spread,
-                'five_cards': spreader.three_card_spread
+                'five_cards': spreader.five_card_spread,
             }
             print(f"📋 Доступные методы: {list(spread_map.keys())}")
             
@@ -463,6 +464,34 @@ def main():
     print("✅ Бот запущен! Напишите /start в Telegram")
     app.run_polling()
     
+
+async def five_card_spread(self, question: str) -> Dict[str, Any]:
+    """Расклад 'Пять карт' (Ситуация - Что мешает - Что помогает - Совет - Итог)"""
+    cards_dicts = self._get_random_cards(5)
+    positions = [
+        "Ситуация",
+        "Что мешает",
+        "Что помогает",
+        "Совет",
+        "Итог"
+    ]
+    
+    cards_with_positions = [(card["name"], card["position"]) for card in cards_dicts]
+    
+    interpretation = await self.generate_reading(
+        spread_name="Пять карт",
+        positions=positions,
+        cards_with_positions=cards_with_positions,
+        question=question
+    )
+    
+    return {
+        "spread": "five_cards",
+        "name": "Пять карт (Ситуация-Совет-Итог)",
+        "positions": positions,
+        "cards": cards_dicts,
+        "interpretation": interpretation
+    }
 
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
