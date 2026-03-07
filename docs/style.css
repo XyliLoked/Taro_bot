@@ -144,12 +144,6 @@ body::before {
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-@keyframes gradientMove {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
-
 .magic-button:hover {
     transform: translateY(-3px) scale(1.02);
     box-shadow: 
@@ -574,13 +568,26 @@ body::before {
 
 .card-glow {
     position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle at 30% 30%, rgba(255, 215, 0, 0.2), transparent 70%);
-    animation: cardGlow 8s infinite linear;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(125deg, 
+        rgba(184, 155, 123, 0.1) 0%, 
+        rgba(212, 175, 55, 0.2) 25%,
+        rgba(139, 115, 85, 0.1) 50%,
+        rgba(212, 175, 55, 0.2) 75%,
+        rgba(184, 155, 123, 0.1) 100%);
+    background-size: 200% 200%;
+    animation: gradientMove 8s ease infinite;
     pointer-events: none;
+    mix-blend-mode: overlay;
+}
+
+@keyframes gradientMove {
+    0% { background-position: 0% 0%; }
+    50% { background-position: 100% 100%; }
+    100% { background-position: 0% 0%; }
 }
 
 @keyframes cardGlow {
