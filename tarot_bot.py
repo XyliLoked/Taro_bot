@@ -554,6 +554,7 @@ class WebAppHandler(BaseHTTPRequestHandler):
                         'career': spreader.career_spread,
                         'celtic_cross': spreader.celtic_cross_spread,
                         'daily': spreader.daily_spread,
+                        'five_cards': spreader.five_card_spread,
                     }
                     
                     spread_method = spread_map.get(spread_type)
